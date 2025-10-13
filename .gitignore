@@ -1,1 +1,56 @@
-kafka_logs/
+# ==============================
+# General
+# ==============================
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.tmp
+
+# Virtual environments
+venv/
+.env/
+.envrc
+
+# Logs
+
+# *.log
+
+logs/
+
+# ==============================
+# Kafka Data
+# ==============================
+# Kafka internal data (topics, logs, metadata)
+kafka/data/
+
+# ==============================
+# Models & Large Files
+# ==============================
+# YOLO model weights or any large .pt file
+
+# *.pt
+*.onnx
+
+# ==============================
+# Docker
+# ==============================
+# Docker volumes and intermediate files
+*.pid
+*.pid.lock
+tmp/
+*.bak
+*.swp
+
+# ==============================
+# IDE / Editor
+# ==============================
+.vscode/
+.idea/
+*.iml
+
