@@ -3,5 +3,5 @@
 ---
 
 
-**note:** run docker engine first, compose without `-d`
+**note:** run docker engine first  
 `docker compose up` 
