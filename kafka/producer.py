@@ -8,16 +8,34 @@ import datetime
 from kafka import KafkaProducer
 import json
 from collections import Counter
+import os
+
 
 # Configure logging
-logging.basicConfig(filename='producer.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+LOG_FILE = '/app/producer.log'
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE, mode='a'),
+        logging.StreamHandler() 
+    ]
+)
+logger = logging.getLogger(__name__)
+
 
 # Load a pretrained YOLOv8n model
-model = YOLO('yolov8n.pt')
+model = YOLO('yolov8n.pt') 
 
 # Kafka configuration
-producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
-                         value_serializer=lambda x: json.dumps(x).encode('utf-8'))
+bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+
+producer = KafkaProducer(
+    bootstrap_servers=[bootstrap_servers],
+    value_serializer=lambda x: json.dumps(x).encode('utf-8')
+)
+
 
 # URL of the webcam image
 base_url = 'https://webcams.transport.nsw.gov.au/livetraffic-webcams/cameras/wentworth_avenue_sydney.jpeg'

@@ -3,5 +3,9 @@
 ---
 
 
-**note:** run docker engine first  
-`docker compose up` 
+**note:** run docker engine first, then:
+```sh
+docker compose down -v
+docker compose build
+docker compose up
+```

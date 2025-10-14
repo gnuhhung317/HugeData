@@ -79,3 +79,23 @@
 2025-10-13 10:10:06,456 - Topic traffic_data not found in cluster metadata
 2025-10-13 10:10:06,630 - {'car': 4, 'bus': 1}
 2025-10-13 10:10:25,300 - {'bus': 1, 'car': 3}
+2025-10-14 06:55:54,122 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=kafka:9092 <connecting> [IPv4 ('172.18.0.2', 9092)]>: connecting to kafka:9092 [('172.18.0.2', 9092) IPv4]
+2025-10-14 06:55:54,131 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=kafka:9092 <checking_api_versions_recv> [IPv4 ('172.18.0.2', 9092)]>: Broker version identified as 2.6
+2025-10-14 06:55:54,132 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=kafka:9092 <connected> [IPv4 ('172.18.0.2', 9092)]>: Connection complete.
+2025-10-14 06:55:57,159 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=1 host=kafka:9092 <connecting> [IPv4 ('172.18.0.2', 9092)]>: connecting to kafka:9092 [('172.18.0.2', 9092) IPv4]
+2025-10-14 06:55:57,160 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=1 host=kafka:9092 <connected> [IPv4 ('172.18.0.2', 9092)]>: Connection complete.
+2025-10-14 06:55:57,161 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=kafka:9092 <connected> [IPv4 ('172.18.0.2', 9092)]>: Closing connection. 
+2025-10-14 06:55:57,184 - INFO - {'car': 8, 'bus': 2, 'truck': 1}
+2025-10-14 06:56:16,228 - INFO - {'car': 8, 'bus': 1, 'truck': 1}
+2025-10-14 07:03:29,810 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=kafka:9092 <connecting> [IPv4 ('172.18.0.2', 9092)]>: connecting to kafka:9092 [('172.18.0.2', 9092) IPv4]
+2025-10-14 07:03:29,819 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=kafka:9092 <checking_api_versions_recv> [IPv4 ('172.18.0.2', 9092)]>: Broker version identified as 2.6
+2025-10-14 07:03:29,820 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=kafka:9092 <connected> [IPv4 ('172.18.0.2', 9092)]>: Connection complete.
+2025-10-14 07:03:32,838 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=1 host=kafka:9092 <connecting> [IPv4 ('172.18.0.2', 9092)]>: connecting to kafka:9092 [('172.18.0.2', 9092) IPv4]
+2025-10-14 07:03:32,839 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=1 host=kafka:9092 <connected> [IPv4 ('172.18.0.2', 9092)]>: Connection complete.
+2025-10-14 07:03:32,840 - INFO - <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=kafka:9092 <connected> [IPv4 ('172.18.0.2', 9092)]>: Closing connection. 
+2025-10-14 07:03:32,865 - INFO - {'car': 5, 'truck': 1, 'bus': 2}
+2025-10-14 07:03:50,651 - INFO - {'bus': 1, 'car': 13}
+2025-10-14 07:04:09,738 - INFO - {'bus': 1, 'car': 4}
+2025-10-14 07:04:28,719 - INFO - {'bus': 1, 'motorcycle': 2, 'car': 7}
+2025-10-14 07:04:45,029 - INFO - {'car': 11, 'bus': 1}
+2025-10-14 07:05:01,907 - INFO - {'bus': 1, 'car': 10}

@@ -4,7 +4,7 @@ import json
 # Create a consumer to read messages from the 'traffic_data' topic
 consumer = KafkaConsumer(
     'traffic_data',
-    bootstrap_servers=['localhost:9092'],
+    bootstrap_servers=['kafka:9092'],
     auto_offset_reset='latest', # Start reading from the newest message in the topic
     group_id='my-consumer-group',
     value_deserializer=lambda x: json.loads(x.decode('utf-8')) # Decode the JSON message
