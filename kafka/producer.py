@@ -60,7 +60,7 @@ while True:
             "counts": vehicle_counts
         }
 
-        producer.send('traffic_data', value=data)
+        producer.send('traffic', value=data)
         producer.flush()
 
         logging.info(data)
