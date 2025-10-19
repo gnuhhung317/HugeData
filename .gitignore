@@ -28,6 +28,7 @@ logs/
 # ==============================
 # Kafka internal data (topics, logs, metadata)
 kafka/data/
+spark/data/
 
 # ==============================
 # Models & Large Files

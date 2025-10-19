@@ -1,0 +1,21 @@
+FROM python:3.10-slim
+
+# Cài thư viện hệ thống
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Cài Python libs cho Spark + YOLO + Kafka
+RUN pip install --no-cache-dir \
+    numpy \
+    kafka-python \
+    requests \
+    opencv-python-headless \
+    pyspark
+
+WORKDIR /app
+
+COPY . .
+
+CMD ["python", "spark_stream.py"]

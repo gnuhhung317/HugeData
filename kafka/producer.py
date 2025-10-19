@@ -9,69 +9,68 @@ from kafka import KafkaProducer
 import json
 from collections import Counter
 
-# Configure logging
+# Logging setup
 logging.basicConfig(filename='producer.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
-# Load a pretrained YOLOv8n model
+# Load YOLOv8 model
 model = YOLO('yolov8n.pt')
 
-# Kafka configuration
-producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
-                         value_serializer=lambda x: json.dumps(x).encode('utf-8'))
+# Kafka setup
+producer = KafkaProducer(
+    bootstrap_servers=['localhost:9092'],
+    value_serializer=lambda x: json.dumps(x).encode('utf-8'),
+    acks='all'
+)
 
-# URL of the webcam image
-base_url = 'https://webcams.transport.nsw.gov.au/livetraffic-webcams/cameras/wentworth_avenue_sydney.jpeg'
+# TP.HCM camera base URL (chỉ cần giữ id cố định, t thay đổi)
+base_url = 'https://giaothong.hochiminhcity.gov.vn/render/ImageHandler.ashx?id=5deb576d1dc17d7c5515ad10'
 
 while True:
     try:
-        # Add a timestamp to the URL
-        now = datetime.datetime.now()
-        url = f'{base_url}?{now.strftime("%I:%M:%S%p")}&refresh={now.strftime("%I:%M:%S%p")}'
+        # Thêm timestamp để tránh ảnh bị cache
+        timestamp = int(time.time() * 1000)
+        url = f'{base_url}&t={timestamp}'
 
-        # Fetch the image from the URL
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
-        }
-        response = requests.get(url, headers=headers, stream=True)
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, stream=True, timeout=10)
         response.raise_for_status()
 
-        # Check if the content is an image
-        if 'image/jpeg' not in response.headers.get('Content-Type', '-'):
-            logging.warning('Content is not a JPEG image.')
-            print('Content is not a JPEG image.')
+        if 'image/jpeg' not in response.headers.get('Content-Type', ''):
+            logging.warning('Not a JPEG image.')
             time.sleep(10)
             continue
 
-        # Read the image data into a numpy array
         image_array = np.asarray(bytearray(response.raw.read()), dtype=np.uint8)
-
-        # Decode the image
         img = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
-        # Run inference on the image
-        results = model.predict(source=img, conf=0.25)
+        # Run YOLO inference
+        results = model.predict(source=img, conf=0.05, verbose=False)[0]
 
-        # Log detected vehicles
-        vehicles = []
-        for r in results:
-            for c in r.boxes.cls:
-                class_name = model.names[int(c)]
-                if class_name in ['car', 'motorcycle', 'bus', 'truck']:
-                    vehicles.append(class_name)
+        # Lọc các loại xe
+        vehicles = [
+            model.names[int(c)] for c in results.boxes.cls
+            if model.names[int(c)] in ['car', 'motorcycle', 'bus', 'truck']
+        ]
+        vehicle_counts = dict(Counter(vehicles))
 
-        vehicle_counts = Counter(vehicles)
-        log_message = {vehicle_type: count for vehicle_type, count in vehicle_counts.items()}
+        # Gói dữ liệu gửi Kafka
+        data = {
+            "camera": "HCMC_5deb576d1dc17d7c5515acfa",
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "counts": vehicle_counts
+        }
 
-        # Send to Kafka
-        producer.send('traffic_data', value=log_message)
+        producer.send('traffic', value=data)
         producer.flush()
 
-        logging.info(log_message)
-        print(log_message)
+        logging.info(data)
+        print(data)
+
+        del img, results
 
     except Exception as e:
-        logging.error(f'An error occurred: {e}')
-        print(f'An error occurred: {e}')
+        logging.error(f'Error: {e}')
+        print(f'Error: {e}')
 
-    # Wait for 10 seconds before the next refresh
-    time.sleep(15)
+    # Đợi 15 giây trước lần lấy tiếp theo
+    time.sleep(5)
