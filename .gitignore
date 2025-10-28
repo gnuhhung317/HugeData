@@ -20,7 +20,7 @@ venv/
 # Logs
 
 *.log
-
+kafka/producer.log
 logs/
 
 # ==============================

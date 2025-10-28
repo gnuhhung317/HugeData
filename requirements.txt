@@ -2,7 +2,7 @@
 aiohttp==3.9.5
 aiolimiter==1.1.0
 requests
-
+orjson
 # Kafka
 kafka-python
 
@@ -13,3 +13,4 @@ ultralytics
 
 # PySpark (for Spark streaming)
 pyspark
+

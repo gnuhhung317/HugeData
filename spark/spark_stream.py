@@ -1,22 +1,28 @@
-# File: spark_stream_hdfs.py
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col
-from pyspark.sql.types import StructType, StructField, StringType, MapType, IntegerType
+from pyspark.sql.types import StructType, StructField, StringType, MapType, IntegerType, DoubleType
 
 # -----------------------------
 # SparkSession
 # -----------------------------
+# For local: uncomment config line below
+# For K8s: packages already in spark-submit args
 spark = SparkSession.builder \
     .appName("KafkaTrafficLocalPipeline") \
     .getOrCreate()
+    # .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0") \
 
 spark.sparkContext.setLogLevel("WARN")
 
 # -----------------------------
 # Kafka config
 # -----------------------------
-kafka_bootstrap = "localhost:9092"
+# kafka_bootstrap = "localhost:9092"
+
+# Kubernetes deployment:
+kafka_bootstrap = "kafka.hugedata.svc.cluster.local:9092"
+
 kafka_topic = "traffic"
 
 # -----------------------------
@@ -38,6 +44,9 @@ df_string = df.selectExpr("CAST(value AS STRING)")
 # -----------------------------
 schema = StructType([
     StructField("camera", StringType()),
+    StructField("camera_id", StringType()),
+    StructField("latitude", DoubleType()),
+    StructField("longitude", DoubleType()),
     StructField("timestamp", StringType()),
     StructField("counts", MapType(StringType(), IntegerType()))
 ])
@@ -47,8 +56,13 @@ df_parsed = df_string.select(from_json(col("value"), schema).alias("data")).sele
 # -----------------------------
 # Output paths (local)
 # -----------------------------
-output_path = "file:///app/data"
-checkpoint_path = "file:///app/data/checkpoint"
+# Local testing:
+# output_path = "file:///app/data"
+# checkpoint_path = "file:///app/data/checkpoint"
+
+# Kubernetes deployment:
+output_path = "/app/data/traffic_stream"
+checkpoint_path = "/app/data/checkpoint"
 
 # -----------------------------
 # Write to local folder (Parquet)
@@ -74,5 +88,4 @@ console_query = df_parsed.writeStream \
 # -----------------------------
 # Keep streaming
 # -----------------------------
-query.awaitTermination()
-console_query.awaitTermination()
+spark.streams.awaitAnyTermination()
