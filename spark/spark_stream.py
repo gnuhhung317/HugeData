@@ -27,6 +27,7 @@ df = spark.readStream \
     .option("kafka.bootstrap.servers", kafka_bootstrap) \
     .option("subscribe", kafka_topic) \
     .option("startingOffsets", "latest") \
+    .option("failOnDataLoss", "false") \
     .load()
 
 # Convert value from bytes to string
