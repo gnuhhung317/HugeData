@@ -13,7 +13,7 @@ import re
 import orjson
 from requests.adapters import HTTPAdapter, Retry
 
-CAMERA_JSON_FILE = "cameras.json"
+CAMERA_JSON_FILE = "kafka/cameras.json"
 BASE_URL = "https://giaothong.hochiminhcity.gov.vn/render/ImageHandler.ashx?id="
 BATCH_SIZE = 8          # batch cực nhỏ cho 2GB RAM
 BATCH_DELAY = 1         # delay 30s giữa batch
