@@ -70,7 +70,7 @@ async def worker(name, shard):
 
 async def main():
     # chia 700 camera cho N worker
-    N = 10
+    N = 20
     shards = [CAMERAS[i::N] for i in range(N)]
     await asyncio.gather(*(worker(f"W{i}", shards[i]) for i in range(N)))
 

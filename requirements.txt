@@ -1,0 +1,15 @@
+# HTTP & Async libraries
+aiohttp==3.9.5
+aiolimiter==1.1.0
+requests
+
+# Kafka
+kafka-python
+
+# Computer Vision & ML
+opencv-python
+numpy
+ultralytics
+
+# PySpark (for Spark streaming)
+pyspark
