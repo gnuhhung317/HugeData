@@ -8,69 +8,155 @@ import datetime
 from kafka import KafkaProducer
 import json
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
+import orjson
+from requests.adapters import HTTPAdapter, Retry
 
-# Logging setup
+CAMERA_JSON_FILE = "cameras.json"
+BASE_URL = "https://giaothong.hochiminhcity.gov.vn/render/ImageHandler.ashx?id="
+BATCH_SIZE = 8          # batch cực nhỏ cho 2GB RAM
+BATCH_DELAY = 1         # delay 30s giữa batch
+MAX_WORKERS = 3          # 1 thread để tiết kiệm RAM + CPU
+YOLO_CONF = 0.1
+TARGET_CLASSES = ['car', 'motorcycle', 'bus', 'truck']
+MAX_RETRIES = 3
+BACKOFF_FACTOR = 0.5
+RESIZE_WIDTH = 320       # resize nhỏ để giảm RAM
+RESIZE_HEIGHT = 180
+
+# ===============================
+# Logging
+# ===============================
 logging.basicConfig(filename='producer.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
-# Load YOLOv8 model
-model = YOLO('yolov8n.pt')
-
+# ===============================
 # Kafka setup
+# ===============================
 producer = KafkaProducer(
     bootstrap_servers=['localhost:9092'],
     value_serializer=lambda x: json.dumps(x).encode('utf-8'),
-    acks='all'
+    acks='all',
+    linger_ms=100
 )
 
-# TP.HCM camera base URL (chỉ cần giữ id cố định, t thay đổi)
-base_url = 'https://giaothong.hochiminhcity.gov.vn/render/ImageHandler.ashx?id=5deb576d1dc17d7c5515ad10'
+# ===============================
+# YOLO setup (CPU-only)
+# ===============================
+model = YOLO('yolov8n.pt').to('cpu')
 
-while True:
+# ===============================
+# Requests session with retry
+# ===============================
+session = requests.Session()
+retries = Retry(
+    total=MAX_RETRIES,
+    backoff_factor=BACKOFF_FACTOR,
+    status_forcelist=[500, 502, 503, 504],
+    allowed_methods=["GET"]
+)
+adapter = HTTPAdapter(max_retries=retries)
+session.mount("http://", adapter)
+session.mount("https://", adapter)
+
+# ===============================
+# Load cameras once, cache in memory
+# ===============================
+def load_cameras(path):
+    with open(path, 'rb') as f:
+        data = orjson.loads(f.read())
+    if isinstance(data, dict):
+        data = [data]
+
+    cameras = []
+    for cam in data:
+        cam_id = cam.get("CamId")
+        display_name = cam.get("DisplayName")
+        loc_str = cam.get("Location")
+        lat = lon = None
+        if loc_str:
+            try:
+                loc_json = orjson.loads(loc_str)
+                shape = loc_json["Rows"][0][1]
+                match = re.search(r"POINT\(([\d.]+)\s+([\d.]+)\)", shape)
+                if match:
+                    lon, lat = float(match.group(1)), float(match.group(2))
+            except Exception:
+                pass
+        cameras.append({
+            "cam_id": cam_id,
+            "display_name": display_name,
+            "latitude": lat,
+            "longitude": lon
+        })
+    return cameras
+
+CAMERAS_CACHE = load_cameras(CAMERA_JSON_FILE)
+TOTAL_CAMERAS = len(CAMERAS_CACHE)
+print(f"Loaded {TOTAL_CAMERAS} cameras.")
+
+# ===============================
+# Fetch + YOLO processing
+# ===============================
+def process_camera(cam):
+    cam_id = cam["cam_id"]
+    url = f"{BASE_URL}{cam_id}&t={int(time.time() * 1000)}"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+
     try:
-        # Thêm timestamp để tránh ảnh bị cache
-        timestamp = int(time.time() * 1000)
-        url = f'{base_url}&t={timestamp}'
-
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers, stream=True, timeout=10)
+        response = session.get(url, headers=headers, stream=True, timeout=10)
         response.raise_for_status()
-
         if 'image/jpeg' not in response.headers.get('Content-Type', ''):
-            logging.warning('Not a JPEG image.')
-            time.sleep(10)
-            continue
+            raise ValueError("Invalid content type")
 
-        image_array = np.asarray(bytearray(response.raw.read()), dtype=np.uint8)
-        img = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+        img_array = np.asarray(bytearray(response.raw.read()), dtype=np.uint8)
+        img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        img = cv2.resize(img, (RESIZE_WIDTH, RESIZE_HEIGHT))
 
-        # Run YOLO inference
-        results = model.predict(source=img, conf=0.05, verbose=False)[0]
-
-        # Lọc các loại xe
-        vehicles = [
-            model.names[int(c)] for c in results.boxes.cls
-            if model.names[int(c)] in ['car', 'motorcycle', 'bus', 'truck']
-        ]
+        results = model.predict(source=img, conf=YOLO_CONF, verbose=False)[0]
+        vehicles = [model.names[int(c)] for c in results.boxes.cls if model.names[int(c)] in TARGET_CLASSES]
         vehicle_counts = dict(Counter(vehicles))
 
-        # Gói dữ liệu gửi Kafka
         data = {
-            "camera": "HCMC_5deb576d1dc17d7c5515acfa",
+            "camera": cam["display_name"],
+            "camera_id": cam_id,
+            "latitude": cam["latitude"],
+            "longitude": cam["longitude"],
             "timestamp": datetime.datetime.utcnow().isoformat(),
             "counts": vehicle_counts
         }
 
         producer.send('traffic', value=data)
-        producer.flush()
-
-        logging.info(data)
-        print(data)
-
-        del img, results
+        return f"[OK] {cam_id}: {vehicle_counts}"
 
     except Exception as e:
-        logging.error(f'Error: {e}')
-        print(f'Error: {e}')
+        return f"[ERROR] {cam_id}: {e}"
 
-    # Đợi 15 giây trước lần lấy tiếp theo
-    time.sleep(5)
+# ===============================
+# Main loop với batch cực nhỏ + delay
+# ===============================
+def main():
+    while True:
+        start_time = time.time()
+        print(f"\n=== Fetch round at {datetime.datetime.now()} ===")
+
+        for i in range(0, TOTAL_CAMERAS, BATCH_SIZE):
+            batch = CAMERAS_CACHE[i:i+BATCH_SIZE]
+            print(f"\nProcessing batch {i//BATCH_SIZE + 1}: {len(batch)} cameras")
+
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                futures = [executor.submit(process_camera, cam) for cam in batch]
+                for f in as_completed(futures):
+                    result = f.result()
+                    print(result)
+                    logging.info(result)
+
+            producer.flush()
+            print(f"Batch {i//BATCH_SIZE + 1} done, waiting {BATCH_DELAY}s before next batch...")
+            time.sleep(BATCH_DELAY)
+
+        elapsed = time.time() - start_time
+        print(f"Round done in {elapsed:.1f}s")
+
+if __name__ == "__main__":
+    main()
