@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-streaming-deployment
+  namespace: hugedata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-streaming
+  template:
+    metadata:
+      labels:
+        app: spark-streaming
+    spec:
+      serviceAccountName: spark
+      initContainers:
+      - name: fix-permissions
+        image: busybox
+        command: ['sh', '-c', 'mkdir -p /ivy2 && chmod -R 777 /ivy2']
+        volumeMounts:
+        - name: ivy-cache
+          mountPath: /ivy2
+      containers:
+      - name: spark-streaming
+        image: apache/spark:3.5.1-python3
+        command: ["/opt/spark/bin/spark-submit"]
+        args:
+        - --master
+        - local[2]
+        - --conf
+        - spark.jars.ivy=/ivy2
+        - --packages
+        - org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0
+        - /app/spark_stream.py
+        volumeMounts:
+        - name: app-volume
+          mountPath: /app
+        - name: data-volume
+          mountPath: /app/data
+        - name: ivy-cache
+          mountPath: /ivy2
+      volumes:
+      - name: app-volume
+        configMap:
+          name: spark-streaming-config
+      - name: data-volume
+        emptyDir: {}
+      - name: ivy-cache
+        emptyDir: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-streaming-config
+  namespace: hugedata
+data:
+  spark_stream.py: |
+    from pyspark.sql import SparkSession
+    from pyspark.sql.functions import from_json, col
+    from pyspark.sql.types import StructType, StructField, StringType, MapType, IntegerType, DoubleType
+
+    spark = SparkSession.builder \
+        .appName("KafkaTrafficPipeline") \
+        .getOrCreate()
+
+    spark.sparkContext.setLogLevel("WARN")
+
+    kafka_bootstrap = "kafka.hugedata.svc.cluster.local:9092"
+    kafka_topic = "traffic"
+
+    df = spark.readStream \
+        .format("kafka") \
+        .option("kafka.bootstrap.servers", kafka_bootstrap) \
+        .option("subscribe", kafka_topic) \
+        .option("startingOffsets", "latest") \
+        .option("failOnDataLoss", "false") \
+        .load()
+
+    df_string = df.selectExpr("CAST(value AS STRING)")
+
+    schema = StructType([
+        StructField("camera", StringType()),
+        StructField("camera_id", StringType()),
+        StructField("latitude", DoubleType()),
+        StructField("longitude", DoubleType()),
+        StructField("timestamp", StringType()),
+        StructField("counts", MapType(StringType(), IntegerType()))
+    ])
+
+    df_parsed = df_string.select(from_json(col("value"), schema).alias("data")).select("data.*")
+
+    output_path = "/app/data/traffic_stream"
+    checkpoint_path = "/app/data/checkpoint"
+
+    query = df_parsed.writeStream \
+        .outputMode("append") \
+        .format("parquet") \
+        .option("path", output_path) \
+        .option("checkpointLocation", checkpoint_path) \
+        .trigger(processingTime="10 seconds") \
+        .start()
+
+    console_query = df_parsed.writeStream \
+        .outputMode("append") \
+        .format("console") \
+        .option("truncate", False) \
+        .trigger(processingTime="10 seconds") \
+        .start()
+
+    spark.streams.awaitAnyTermination()
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spark-data-pvc
+  namespace: hugedata
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spark
+  namespace: hugedata
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: spark-role
+  namespace: hugedata
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: spark-rolebinding
+  namespace: hugedata
+subjects:
+- kind: ServiceAccount
+  name: spark
+  namespace: hugedata
+roleRef:
+  kind: Role
+  name: spark-role
+  apiGroup: rbac.authorization.k8s.io

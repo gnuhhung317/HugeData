@@ -12,8 +12,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 import orjson
 from requests.adapters import HTTPAdapter, Retry
+import os
 
-CAMERA_JSON_FILE = "kafka/cameras.json"
+CAMERA_JSON_FILE = "kafka/cameras.json"  # Dùng khi chạy từ root folder
+# CAMERA_JSON_FILE = "cameras.json"  # Uncomment nếu chạy từ trong kafka folder
 BASE_URL = "https://giaothong.hochiminhcity.gov.vn/render/ImageHandler.ashx?id="
 BATCH_SIZE = 8          # batch cực nhỏ cho 2GB RAM
 BATCH_DELAY = 1         # delay 30s giữa batch
@@ -33,8 +35,10 @@ logging.basicConfig(filename='producer.log', level=logging.INFO, format='%(ascti
 # ===============================
 # Kafka setup
 # ===============================
+
+KAFKA_BOOTSTRAP_SERVERS = ['localhost:9094'] 
 producer = KafkaProducer(
-    bootstrap_servers=['localhost:9092'],
+    bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
     value_serializer=lambda x: json.dumps(x).encode('utf-8'),
     acks='all',
     linger_ms=100
