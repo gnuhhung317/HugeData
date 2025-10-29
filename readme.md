@@ -1,10 +1,6 @@
 ### **ʜuɠɘɗata**
 > IT4931: soict - hust
----
-
-
-**note:** run docker engine first, compose without `-d`
-`docker compose up` 
+---  
 
 # Hệ thống Big Data cho Camera Giao Thông
 *(Lambda-style pipeline với Kafka → HDFS → Spark Streaming & Spark Batch)*
@@ -194,3 +190,9 @@ LIMIT 10;
 - Travel-time index, Bottleneck minutes, % time congested, Incident count, Average delay per intersection.
 
 ---
+`kubectl apply -f k8s/namespace.yaml`  
+<!-- `kubectl apply -f kafka/zookeeper.yaml`   -->
+`kubectl apply -f kafka/kafka.yaml`  
+
+**dev**  - kafka localhost:9094  
+`kubectl port-forward pods/kafka-0 9094:9094 -n hugedata`  
