@@ -158,8 +158,43 @@ watch -n 5 'kubectl exec -it <spark-pod> -n hugedata -- ls -lh /app/data/'
 ```
 
 ---
+### **HDFS**
+![alt text](docs/image.png)  
 
-## 🧹 Cleanup
+```bash 
+# Apply hdfs cluster cho k8s
+kubectl apply ./k8s/hdfs/hdfs-cluster.yaml 
+
+# Kiểm tra trạng thái
+kubectl get pods -n hugedata -w
+
+# ready 1/1 Runing, chạy:
+kubectl port-forward svc/hdfs-namenode -n hugedata 9870:9870
+# => localhost:9870 xuất hiện 2 datanode như hình
+```  
+
+```bash
+# Chạy port-forward ở kafka để producer gửi data vào
+kubectl port-forward -n hugedata svc/kafka 9094:9094
+```  
+
+```bash
+python ./producer/producer.py
+```  
+> Dữ liệu nhận được ở hdfs nếu thành công: 
+root@hdfs-namenode-b85564695-kfdmb:/# hdfs dfs -ls /traffic_stream  
+Found 9 items  
+drwxr-xr-x   - spark supergroup          0 2025-11-04 06:08 /traffic_stream/_spark_metadata  
+-rw-r--r--   3 spark supergroup       3164 2025-11-04 06:08 /traffic_stream/part-00000-239fc3cd-0386-4f39-844b-810ac5d912a1-c000.snappy.parquet  
+-rw-r--r--   3 spark supergroup       3129 2025-11-04 06:07 /traffic_stream/part-00000-317aaeb3-37f9-40f1-961a-3c93a8c815d6-c000.snappy.parquet  
+-rw-r--r--   3 spark supergroup       3190 2025-11-04 06:08 /traffic_stream/part-00000-3eee1b11-459b-4043-a202-5f50646e632c-c000.snappy.parquet  
+-rw-r--r--   3 spark supergroup        872 2025-11-04 06:06 /traffic_stream/part-00000-4c26ac0d-a77b-4505-843a-f8d8321a6ca9-c000.snappy.parquet  
+-rw-r--r--   3 spark supergroup       3178 2025-11-04 06:07 /traffic_stream/part-00000-6ccb519f-6aa8-4879-96eb-041d7a6aa0aa-c000.snappy.parquet  
+-rw-r--r--   3 spark supergroup       3187 2025-11-04 06:07 /traffic_stream/part-00000-7fecc515-c3d6-47a1-b86c-13a427e090d0-c000.snappy.parquet  
+-rw-r--r--   3 spark supergroup       3194 2025-11-04 06:07 /traffic_stream/part-00000-ba9a754f-3e3e-4e1a-87b0-c15af914cb0b-c000.snappy.parquet  
+-rw-r--r--   3 spark supergroup       3142 2025-11-04 06:08 /traffic_stream/part-00000-dfb1bc61-ccd8-42aa-9b0e-d2b65cc818a6-c000.snappy.parquet    
+
+## 🧹 Cleanup 
 
 ```bash
 # Xóa tất cả resources

@@ -4,7 +4,7 @@ metadata:
   name: kafka
   namespace: hugedata
 spec:
-  serviceName: "kafka" 
+  serviceName: "kafka"
   replicas: 1
   selector:
     matchLabels:
@@ -18,38 +18,45 @@ spec:
       - name: kafka
         image: apache/kafka:3.8.0
         ports:
-        - containerPort: 9092  # INTERNAL k8s
+        - containerPort: 9092  # INTERNAL (cluster)
         - containerPort: 9093  # Controller
-        - containerPort: 9094  # EXTERNAL port-forward
+        - containerPort: 9094  # EXTERNAL (port-forward)
         env:
         - name: KAFKA_NODE_ID
           value: "1"
         - name: KAFKA_PROCESS_ROLES
-          value: "broker,controller" 
+          value: "broker,controller"
         
+        # Định nghĩa 3 listener
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
           value: "CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT"
         
+        # Kafka lắng nghe 3 port nội bộ container
         - name: KAFKA_LISTENERS
           value: "INTERNAL://:9092,EXTERNAL://:9094,CONTROLLER://:9093"
         
+        # Internal = hostname DNS nội bộ, External = localhost (port-forward)
         - name: KAFKA_ADVERTISED_LISTENERS
-          value: "INTERNAL://kafka.hugedata.svc.cluster.local:9092,EXTERNAL://localhost:9094"
-        
+          value: "INTERNAL://kafka.hugedata.svc.cluster.local:9092,EXTERNAL://127.0.0.1:9094"
+
+        # Broker nội bộ trao đổi qua INTERNAL listener
         - name: KAFKA_INTER_BROKER_LISTENER_NAME
           value: "INTERNAL"
 
+        # Controller quorum (Kafka 3.x kiểu mới)
         - name: KAFKA_CONTROLLER_LISTENER_NAMES
           value: "CONTROLLER"
         - name: KAFKA_CONTROLLER_QUORUM_VOTERS
           value: "1@kafka-0.kafka.hugedata.svc.cluster.local:9093"
+
+        # Một số cấu hình cơ bản
         - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
           value: "1"
         - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
           value: "0"
         - name: CLUSTER_ID
           value: "5L6g3nShT-eMCtK--X86sw"
----
+
 ---
 apiVersion: v1
 kind: Service
@@ -57,14 +64,12 @@ metadata:
   name: kafka
   namespace: hugedata
 spec:
-  ports:
-    - name: internal
-      port: 9092
-      targetPort: 9092
-    
-    - name: external
-      port: 9094
-      targetPort: 9094
-      
   selector:
     app: kafka
+  ports:
+  - name: internal
+    port: 9092
+    targetPort: 9092
+  - name: external
+    port: 9094
+    targetPort: 9094

@@ -37,7 +37,7 @@ spec:
         - name: app-volume
           mountPath: /app
         - name: data-volume
-          mountPath: /app/data
+          mountPath: /app/data # Path này có thể dùng để ghi dữ liệu tạm
         - name: ivy-cache
           mountPath: /ivy2
       volumes:
@@ -45,7 +45,9 @@ spec:
         configMap:
           name: spark-streaming-config
       - name: data-volume
-        emptyDir: {}
+        # SỬA LỖI NHỎ: Sử dụng PVC bạn đã định nghĩa
+        persistentVolumeClaim:
+          claimName: spark-data-pvc
       - name: ivy-cache
         emptyDir: {}
 ---
@@ -59,6 +61,10 @@ data:
     from pyspark.sql import SparkSession
     from pyspark.sql.functions import from_json, col
     from pyspark.sql.types import StructType, StructField, StringType, MapType, IntegerType, DoubleType
+    import time
+
+    # Đợi HDFS sẵn sàng
+    # time.sleep(15) 
 
     spark = SparkSession.builder \
         .appName("KafkaTrafficPipeline") \
@@ -90,8 +96,11 @@ data:
 
     df_parsed = df_string.select(from_json(col("value"), schema).alias("data")).select("data.*")
 
-    output_path = "/app/data/traffic_stream"
-    checkpoint_path = "/app/data/checkpoint"
+    # Spark sẽ kết nối với 'hdfs-namenode' Service
+    # NameNode sẽ trả về DNS của StatefulSet (ví dụ: hdfs-datanode-0.hdfs-datanode-headless...)
+    # Spark CÓ THỂ phân giải được DNS này.
+    output_path = "hdfs://hdfs-namenode.hugedata.svc.cluster.local:8020/traffic_stream"
+    checkpoint_path = "hdfs://hdfs-namenode.hugedata.svc.cluster.local:8020/checkpoints/traffic_stream"
 
     query = df_parsed.writeStream \
         .outputMode("append") \
@@ -110,6 +119,7 @@ data:
 
     spark.streams.awaitAnyTermination()
 ---
+# ====== CÁC TÀI NGUYÊN KHÁC (GIỮ NGUYÊN) ======
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
