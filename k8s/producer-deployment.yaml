@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
       - name: producer
-        image: gnuhhung317/kafka-producer:latest  
+        image: kafka-producer:dev
+        imagePullPolicy: IfNotPresent
         env:
         - name: KAFKA_BOOTSTRAP_SERVERS
           value: "kafka.hugedata.svc.cluster.local:9092"
@@ -35,7 +36,6 @@ metadata:
   namespace: hugedata
 data:
   cameras.json: |
-    # Paste nội dung file cameras.json ở đây
     [
     {
       "Title": "TTH 406",

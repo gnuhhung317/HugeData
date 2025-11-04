@@ -1,21 +1,15 @@
-FROM python:3.10-slim
+# Dùng image pyspark sẵn có
+FROM octoenergy/pyspark:3.5.2
 
-# Cài thư viện hệ thống
-RUN apt-get update && apt-get install -y \
-    libgl1 \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Cài Python libs cho Spark + YOLO + Kafka
-RUN pip install --no-cache-dir \
-    numpy \
-    kafka-python \
-    requests \
-    opencv-python-headless \
-    pyspark
-
+# Thư mục làm việc
 WORKDIR /app
 
-COPY . .
+# Copy Hadoop/Spark configs
+COPY conf/ /app/conf/
+ENV HADOOP_CONF_DIR=/app/conf
 
+# Copy code Spark vào container
+COPY spark_stream.py .
+
+# Lệnh chạy khi container start
 CMD ["python", "spark_stream.py"]

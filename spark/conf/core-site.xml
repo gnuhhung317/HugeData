@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <!-- Force S3A implementation and path-style access -->
+  <property>
+    <name>fs.s3a.impl</name>
+    <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+  </property>
+  <property>
+    <name>fs.s3a.path.style.access</name>
+    <value>true</value>
+    <description>Use path-style to avoid virtual-hosted DNS on MinIO</description>
+  </property>
+  <property>
+    <name>fs.s3a.connection.ssl.enabled</name>
+    <value>false</value>
+  </property>
+  <!-- Optional: set default endpoint (driver may override at runtime) -->
+  <property>
+    <name>fs.s3a.endpoint</name>
+    <value>http://minio.hugedata.svc.cluster.local:9000</value>
+  </property>
+  <!-- Bucket override for traffic-data -->
+  <property>
+    <name>fs.s3a.bucket.traffic-data.path.style.access</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>fs.s3a.bucket.traffic-data.connection.ssl.enabled</name>
+    <value>false</value>
+  </property>
+  <property>
+    <name>fs.s3a.list.version</name>
+    <value>2</value>
+  </property>
+</configuration>
