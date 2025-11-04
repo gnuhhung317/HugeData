@@ -1,0 +1,10 @@
+# Lightweight dependencies for the Kafka producer container
+# Ultralytics, PyTorch, OpenCV, and NumPy are provided by the base image (ultralytics/ultralytics)
+
+aiohttp==3.9.5
+aiolimiter==1.1.0
+requests
+orjson
+# Kafka client
+kafka-python
+

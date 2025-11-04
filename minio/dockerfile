@@ -1,0 +1,43 @@
+# Minimal wrapper Dockerfile to produce a local 'minio/minio:latest' image.
+# This simply uses the official MinIO server image as the base so building it
+# locally produces an image with the same contents which can be referenced by
+# Kubernetes with `imagePullPolicy: Never`.
+
+FROM python:3.10-slim
+
+# Use a Debian-based Python image so we can install both the MinIO server binary
+# and Python dependencies (minio-py) into the same image. This avoids using the
+# upstream MinIO image which doesn't include a package manager.
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends \
+	   ca-certificates \
+	   curl \
+	   git \
+	&& rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/minio-helper
+
+# Copy and install Python requirements (installs minio-py from GitHub)
+COPY requirements.txt ./requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Copy helper script into image
+COPY minio.py ./minio.py
+RUN chmod +x ./minio.py || true
+
+# Download MinIO server binary and make it executable
+RUN curl -fsSL https://dl.min.io/server/minio/release/linux-amd64/minio -o /usr/local/bin/minio \
+	&& chmod +x /usr/local/bin/minio
+
+# Create non-root user (UID 1000 commonly used by MinIO) and set ownership
+RUN useradd -m -u 1000 minio || true \
+	&& mkdir -p /data \
+	&& chown -R minio:minio /data /opt/minio-helper
+
+USER minio
+
+EXPOSE 9000 9001
+ENTRYPOINT ["/usr/local/bin/minio"]
+CMD ["server", "/data", "--console-address", ":9001"]

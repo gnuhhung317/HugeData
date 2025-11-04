@@ -17,8 +17,8 @@ import os
 CAMERA_JSON_FILE = "kafka/cameras.json"  # Dùng khi chạy từ root folder
 # CAMERA_JSON_FILE = "cameras.json"  # Uncomment nếu chạy từ trong kafka folder
 BASE_URL = "https://giaothong.hochiminhcity.gov.vn/render/ImageHandler.ashx?id="
-BATCH_SIZE = 8          # batch cực nhỏ cho 2GB RAM
-BATCH_DELAY = 1         # delay 30s giữa batch
+BATCH_SIZE = 1          # batch cực nhỏ cho 2GB RAM
+BATCH_DELAY = 30         # delay 30s giữa batch
 MAX_WORKERS = 3          # 1 thread để tiết kiệm RAM + CPU
 YOLO_CONF = 0.1
 TARGET_CLASSES = ['car', 'motorcycle', 'bus', 'truck']
@@ -36,7 +36,10 @@ logging.basicConfig(filename='producer.log', level=logging.INFO, format='%(ascti
 # Kafka setup
 # ===============================
 
-KAFKA_BOOTSTRAP_SERVERS = ['localhost:9094'] 
+# Read bootstrap servers from env (comma-separated), default to in-cluster Service
+# For local testing with port-forward, set KAFKA_BOOTSTRAP_SERVERS=localhost:9094
+_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka.hugedata.svc.cluster.local:9092')
+KAFKA_BOOTSTRAP_SERVERS = [s.strip() for s in _bootstrap.split(',') if s.strip()]
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
     value_serializer=lambda x: json.dumps(x).encode('utf-8'),
@@ -45,9 +48,11 @@ producer = KafkaProducer(
 )
 
 # ===============================
-# YOLO setup (CPU-only)
+# YOLO setup (Ultralytics v8 API, force CPU at inference time)
+# Using the official ultralytics:latest-python image may already provide the
+# correct device and runtime; we explicitly request CPU when calling predict.
 # ===============================
-model = YOLO('yolov8n.pt').to('cpu')
+model = YOLO('yolov8n.pt')
 
 # ===============================
 # Requests session with retry
@@ -117,8 +122,27 @@ def process_camera(cam):
         img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
         img = cv2.resize(img, (RESIZE_WIDTH, RESIZE_HEIGHT))
 
-        results = model.predict(source=img, conf=YOLO_CONF, verbose=False)[0]
-        vehicles = [model.names[int(c)] for c in results.boxes.cls if model.names[int(c)] in TARGET_CLASSES]
+        # Run prediction on CPU to avoid CUDA requirements in the container
+        results = model.predict(source=img, conf=YOLO_CONF, device='cpu', verbose=False)[0]
+
+        # Extract class indices from results.boxes.cls in a safe way (handles
+        # torch tensors or numpy arrays depending on runtime). If there are no
+        # boxes, results.boxes may be empty.
+        classes = []
+        if getattr(results, 'boxes', None) is not None and len(results.boxes) > 0:
+            try:
+                cls_data = results.boxes.cls
+                # If it's a torch tensor, move to cpu and convert to numpy
+                if hasattr(cls_data, 'cpu'):
+                    cls_array = cls_data.cpu().numpy()
+                else:
+                    cls_array = cls_data
+                classes = [int(x) for x in cls_array]
+            except Exception:
+                # Fallback: iterate and coerce to int
+                classes = [int(x) for x in results.boxes.cls]
+
+        vehicles = [model.names[c] for c in classes if model.names[c] in TARGET_CLASSES]
         vehicle_counts = dict(Counter(vehicles))
 
         data = {
