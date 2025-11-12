@@ -28,7 +28,6 @@ logs/
 # ==============================
 # Kafka internal data (topics, logs, metadata)
 kafka/data/
-spark/data/
 spark/jars/
 
 
