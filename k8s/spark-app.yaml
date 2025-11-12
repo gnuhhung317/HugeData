@@ -1,0 +1,64 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: spark-pi-python
+  namespace: hugedata
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: spark-application:dev
+  # We're using a locally-built image tag `spark-application:dev`.
+  # Set pull policy to IfNotPresent so the cluster will use the local image
+  # when available. If your cluster requires it (kind/minikube), you can
+  # alternatively set this to `Never` to always avoid pulling from a registry.
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///app/main.py  # This is correct
+  sparkVersion: 3.5.1
+  sparkConf:
+    # --- FIX IS HERE ---
+    # Add "local://" to tell Spark these JARs are already inside the image
+    # and do not need to be uploaded from the client.
+    # JARs are baked into the image under Spark's jars dir; reference them
+    # from the Spark classpath to avoid SparkSubmit attempting to copy them
+    # from /app (which previously caused NoSuchFileException).
+    "spark.jars": "local:///opt/spark/jars/hadoop-aws-3.3.4.jar,local:///opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar,local:///opt/spark/jars/spark-sql-kafka-0-10_2.12-3.5.1.jar"
+    
+  driver:
+    cores: 1
+    memory: 1g
+    serviceAccount: default
+    env:
+      - name: KAFKA_BOOTSTRAP_SERVERS
+        value: "kafka.hugedata.svc.cluster.local:9092"
+      - name: KAFKA_TOPIC
+        value: "traffic"
+    securityContext:
+      runAsUser: 185
+      runAsGroup: 185
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
+  executor:
+    instances: 1
+    cores: 1
+    memory: 1g
+    env:
+      - name: KAFKA_BOOTSTRAP_SERVERS
+        value: "kafka.hugedata.svc.cluster.local:9092"
+      - name: KAFKA_TOPIC
+        value: "traffic"
+    securityContext:
+      runAsUser: 185
+      runAsGroup: 185
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault

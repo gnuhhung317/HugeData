@@ -1,0 +1,77 @@
+---
+# File 1: Role cho Spark Operator (ĐÃ SỬA)
+# Sửa lỗi: Thêm quyền "sparkconnects" để hết lỗi "forbidden"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: spark-operator-role
+  namespace: hugedata
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "events", "secrets"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["*"]
+  - apiGroups: ["sparkoperator.k8s.io"]
+    resources:
+      - sparkapplications
+      - sparkapplications/status
+      - scheduledsparkapplications
+      - scheduledsparkapplications/status
+      - sparkconnects                 # <--- ĐÃ SỬA: Bổ sung quyền còn thiếu
+      - sparkconnects/status            # <--- ĐÃ SỬA: Bổ sung quyền còn thiếu
+    verbs: ["*"]
+
+---
+# File 2: RoleBinding cho Spark Operator (Giữ nguyên)
+# Gắn quyền ở File 1 cho ServiceAccount "spark-operator-1-controller"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: spark-operator-rolebinding
+  namespace: hugedata
+subjects:
+  - kind: ServiceAccount
+    name: spark-operator-1-controller
+    namespace: hugedata
+roleRef:
+  kind: Role
+  name: spark-operator-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# File 3: Role cho Spark Application (Giữ nguyên)
+# Quyền cho driver/executor (để nó tự tạo pod, service)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: spark-app-role
+  namespace: hugedata
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "persistentvolumeclaims"]
+    verbs: ["create", "get", "list", "watch", "delete", "deletecollection", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
+
+---
+# File 4: RoleBinding cho Spark Application (Giữ nguyên)
+# Gắn quyền ở File 3 cho ServiceAccount "default"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: spark-app-rolebinding
+  namespace: hugedata
+subjects:
+  - kind: ServiceAccount
+    name: default # Gán quyền cho SA "default" theo ý của bạn
+    namespace: hugedata
+roleRef:
+  kind: Role
+  name: spark-app-role
+  apiGroup: rbac.authorization.k8s.io

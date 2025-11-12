@@ -1,15 +1,15 @@
-# Dùng image pyspark sẵn có
-FROM octoenergy/pyspark:3.5.2
+FROM apache/spark-py:latest
 
-# Thư mục làm việc
+USER root
+
 WORKDIR /app
 
-# Copy Hadoop/Spark configs
-COPY conf/ /app/conf/
-ENV HADOOP_CONF_DIR=/app/conf
+COPY main.py .
 
-# Copy code Spark vào container
-COPY spark_stream.py .
+COPY ./jars/hadoop-aws-3.3.4.jar /opt/spark/jars/
+COPY ./jars/aws-java-sdk-bundle-1.12.262.jar /opt/spark/jars/
+COPY ./jars/spark-sql-kafka-0-10_2.12-3.5.1.jar /opt/spark/jars/
 
-# Lệnh chạy khi container start
-CMD ["python", "spark_stream.py"]
+RUN chown -R 185:185 /app /opt/spark/jars
+
+USER 185
