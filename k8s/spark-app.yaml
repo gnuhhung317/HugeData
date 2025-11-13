@@ -22,7 +22,7 @@ spec:
     # JARs are baked into the image under Spark's jars dir; reference them
     # from the Spark classpath to avoid SparkSubmit attempting to copy them
     # from /app (which previously caused NoSuchFileException).
-    "spark.jars": "local:///opt/spark/jars/hadoop-aws-3.3.4.jar,local:///opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar,local:///opt/spark/jars/spark-sql-kafka-0-10_2.12-3.5.1.jar"
+    "spark.jars": "local:///opt/spark/jars/hadoop-aws-3.3.4.jar,local:///opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar,local:///opt/spark/jars/spark-sql-kafka-0-10_2.12-3.5.1.jar,local:///opt/spark/jars/kafka-clients-3.5.1.jar,local:///opt/spark/jars/spark-token-provider-kafka-0-10_2.12-3.5.1.jar,local:///opt/spark/jars/commons-pool2-2.11.1.jar"
     
   driver:
     cores: 1
