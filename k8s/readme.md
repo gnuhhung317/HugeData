@@ -1,8 +1,8 @@
 # 1: setup
   # setup local image
-    docker build -t spark-application:dev .
-    docker build -t kafka-producer:dev .
-    docker build -t minio-local:dev .
+  docker build -t spark-application:dev ./spark
+  docker build -t kafka-producer:dev ./kafka
+  docker build -t minio-local:dev ./minio
 
   # setup spark operator
   helm repo add --force-update spark-operator https://kubeflow.github.io/spark-operator

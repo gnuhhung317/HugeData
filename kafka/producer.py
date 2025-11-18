@@ -145,13 +145,22 @@ def process_camera(cam):
         vehicles = [model.names[c] for c in classes if model.names[c] in TARGET_CLASSES]
         vehicle_counts = dict(Counter(vehicles))
 
+        car_count = vehicle_counts.get("car", 0)
+        truck_count = vehicle_counts.get("truck", 0)
+        bus_count = vehicle_counts.get("bus", 0)
+        motorcycle_count = vehicle_counts.get("motorcycle", 0)
+
+        # data format
+        # time, camera_id, latitude, longitude, car_count, truck_count, bus_count, motorcycle_count
         data = {
-            "camera": cam["display_name"],
+            "time": datetime.datetime.utcnow().isoformat(),
             "camera_id": cam_id,
             "latitude": cam["latitude"],
             "longitude": cam["longitude"],
-            "timestamp": datetime.datetime.utcnow().isoformat(),
-            "counts": vehicle_counts
+            "car_count": car_count,
+            "truck_count": truck_count,
+            "bus_count": bus_count,
+            "motorcycle_count": motorcycle_count
         }
 
         producer.send('traffic', value=data)
