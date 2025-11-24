@@ -1,0 +1,4 @@
+Lưu trữ nhanh các phiên bản cấu hình cũ.
+
+- requirements.txt  | thư viện cần thiết cài đặt local -> chuyển sang dockerfile.
+- Dockerfile | tải trực tiếp các thư viện .jar trong requirements.txt vào image.

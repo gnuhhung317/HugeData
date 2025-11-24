@@ -29,7 +29,9 @@ spec:
       containers:
       - name: minio
         image: minio/minio:latest
-        imagePullPolicy: Never
+        # imagePullPolicy: Always - Luôn kéo ảnh từ registry.
+        # imagePullPolicy: Never - Không bao giờ kéo ảnh, chỉ dùng ảnh có sẵn cục bộ.
+        imagePullPolicy: IfNotPresent # Kéo ảnh nếu chưa có trên node.
         args:
         - server
         - /data
