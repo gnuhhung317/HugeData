@@ -33,12 +33,17 @@ kafka_topic = os.environ.get("KAFKA_TOPIC", "traffic")
 # Define JSON schema for Kafka payload
 # ---------------------------------
 schema = StructType([
-    StructField("camera", StringType()),
+    StructField("time", StringType()),
     StructField("camera_id", StringType()),
     StructField("latitude", DoubleType()),
     StructField("longitude", DoubleType()),
+    StructField("camera", StringType()),
     StructField("timestamp", StringType()),
-    StructField("counts", MapType(StringType(), IntegerType())),
+    StructField("car_count", IntegerType()),
+    StructField("bus_count", IntegerType()),
+    StructField("truck_count", IntegerType()),
+    StructField("motorcycle_count", IntegerType()),
+    StructField("total_count", IntegerType()),
 ])
 
 # ---------------------------------

@@ -52,7 +52,7 @@ producer = KafkaProducer(
 # Using the official ultralytics:latest-python image may already provide the
 # correct device and runtime; we explicitly request CPU when calling predict.
 # ===============================
-model = YOLO('yolov8n.pt')
+model = YOLO('best.pt')
 
 # ===============================
 # Requests session with retry
@@ -151,16 +151,18 @@ def process_camera(cam):
         motorcycle_count = vehicle_counts.get("motorcycle", 0)
 
         # data format
-        # time, camera_id, latitude, longitude, car_count, truck_count, bus_count, motorcycle_count
+        # time, camera_id, latitude, longitude, camera, car_count, truck_count, bus_count, motorcycle_count
         data = {
-            "time": datetime.datetime.utcnow().isoformat(),
+            "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "camera_id": cam_id,
             "latitude": cam["latitude"],
             "longitude": cam["longitude"],
+            "camera": cam["display_name"],
             "car_count": car_count,
-            "truck_count": truck_count,
             "bus_count": bus_count,
-            "motorcycle_count": motorcycle_count
+            "truck_count": truck_count,
+            "motorcycle_count": motorcycle_count,
+            "total_count": car_count + bus_count + truck_count + motorcycle_count
         }
 
         producer.send('traffic', value=data)
