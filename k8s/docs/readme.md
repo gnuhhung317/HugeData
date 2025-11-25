@@ -59,6 +59,7 @@ kubectl apply -f k8s/minio-bucket.yaml
 ## 4. start spark
 ```bash
 kubectl apply -f k8s/spark-app.yaml -n hugedata
+kubectl apply -f k8s/spark-hdfs-reader.yaml -n hugedata
 ```
 
 ## clean (optional)

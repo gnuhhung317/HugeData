@@ -16,7 +16,7 @@ USER root
 
 WORKDIR /app
 
-COPY main.py .
+COPY *.py .
 # Copy JARs from downloader stage
 COPY --from=downloader /jars/*.jar /opt/spark/jars/
 RUN chown -R 185:185 /app /opt/spark/jars
