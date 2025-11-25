@@ -13,6 +13,7 @@ import re
 import orjson
 from requests.adapters import HTTPAdapter, Retry
 import os
+import pytz
 
 CAMERA_JSON_FILE = "kafka/cameras.json"  # Dùng khi chạy từ root folder
 # CAMERA_JSON_FILE = "cameras.json"  # Uncomment nếu chạy từ trong kafka folder
@@ -150,10 +151,12 @@ def process_camera(cam):
         bus_count = vehicle_counts.get("bus", 0)
         motorcycle_count = vehicle_counts.get("motorcycle", 0)
 
+        vietnam_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+        current_time_vn = datetime.datetime.now(vietnam_tz)
         # data format
         # time, camera_id, latitude, longitude, camera, car_count, truck_count, bus_count, motorcycle_count
         data = {
-            "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "time": current_time_vn.strftime("%Y-%m-%d %H:%M:%S"),
             "camera_id": cam_id,
             "latitude": cam["latitude"],
             "longitude": cam["longitude"],

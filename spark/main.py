@@ -96,6 +96,27 @@ except Exception as e:
     )
     print(f"[INFO] Fallback Parquet sink started -> {local_output_path}")
 
+# ---------------------------------
+# HDFS Output Destination
+# ---------------------------------
+hdfs_namenode = os.environ.get("HDFS_NAMENODE", "hdfs://hdfs-namenode:8020")
+hdfs_output_path = f"{hdfs_namenode}/traffic_data/traffic_stream"
+hdfs_checkpoint_path = f"{hdfs_namenode}/traffic_data/checkpoint/traffic_stream"
+
+try:
+    (
+        df_parsed.writeStream
+        .outputMode("append")
+        .format("parquet")
+        .option("path", hdfs_output_path)
+        .option("checkpointLocation", hdfs_checkpoint_path)
+        .trigger(processingTime="10 seconds")
+        .start()
+    )
+    print(f"[HDFS-INFO] Parquet sink to HDFS started -> {hdfs_output_path}")
+except Exception as e:
+    print(f"[HDFS-WARN] Could not start Parquet HDFS sink. Error: {e}")
+
 # Also log to console for quick verification
 (
     df.selectExpr("CAST(value AS STRING)")

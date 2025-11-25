@@ -48,8 +48,10 @@ kubectl apply -f k8s/kafka.yaml
 kubectl apply -f k8s/producer-deployment.yaml
 ```
 
-## 3. start minio
+## 3. start minio / hdfs
 ```bash
+kubectl apply -f k8s/hdfs/hdfs-cluster.yaml
+
 kubectl apply -f k8s/minio-deployment.yaml
 kubectl apply -f k8s/minio-bucket.yaml
 ```
@@ -59,7 +61,7 @@ kubectl apply -f k8s/minio-bucket.yaml
 kubectl apply -f k8s/spark-app.yaml -n hugedata
 ```
 
-## 5. clean (optional)
+## clean (optional)
 ```bash
 kubectl delete deployment --all -n hugedata
 kubectl delete pod spark-pi-python-driver -n hugedata
@@ -75,4 +77,9 @@ kubectl logs spark-pi-python-driver -n hugedata
 ## port-forward minio webview
 ```bash
 kubectl port-forward deployment/minio 9001:9001 9000:9000 -n hugedata
+```
+## port-forward hdfs webview
+```bash
+kubectl port-forward deployment/hdfs-namenode 9870:9870 -n hugedata
+```
 ```

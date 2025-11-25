@@ -15,11 +15,13 @@ spec:
     spec:
       containers:
       - name: producer
-        image: kafka-producer:dev
+        image: kafka-producer:dev2
         imagePullPolicy: IfNotPresent
         env:
         - name: KAFKA_BOOTSTRAP_SERVERS
           value: "kafka.hugedata.svc.cluster.local:9092"
+        - name: TZ
+          value: "Asia/Ho_Chi_Minh"
         volumeMounts:
         - name: cameras-config
           mountPath: /app/kafka/cameras.json
