@@ -1,29 +1,19 @@
-# Lightweight base image (user requested `python:latest`) and explicit installs.
-# Note: switching to a minimal base means large wheels (torch, pyspark) will be
-# downloaded during build; consider using a wheelhouse to avoid repeated
-# downloads on flaky networks.
+
 ARG ULTRALYTICS_BASE="ultralytics/ultralytics:latest-python"
-# You can override the base image at build time with:
-#   docker build --build-arg ULTRALYTICS_BASE=myrepo/ultralytics:tag ...
+
 FROM ${ULTRALYTICS_BASE}
 
-# The ultralytics base image includes PyTorch, Ultralytics, OpenCV and NumPy.
-# Use it as a lightweight ready-to-run base so we don't re-download large
-# wheels during build. We still install small runtime deps from requirements.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     PIP_DEFAULT_TIMEOUT=1000
 
 WORKDIR /app
-
-# Copy and install only lightweight Python dependencies needed by the producer.
-# The base image provides ultralytics/torch/opencv so requirements should be small.
+COPY cameras.json /app/cameras.json
 COPY requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip setuptools wheel \
     && pip --default-timeout=1000 install --no-cache-dir -r /app/requirements.txt
 
-# Copy application code
 COPY . /app
 
 CMD ["python", "producer.py"]
