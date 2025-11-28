@@ -14,8 +14,7 @@ import orjson
 from requests.adapters import HTTPAdapter, Retry
 import os
 
-CAMERA_JSON_FILE = "kafka/cameras.json"  # Dùng khi chạy từ root folder
-# CAMERA_JSON_FILE = "cameras.json"  # Uncomment nếu chạy từ trong kafka folder
+CAMERA_JSON_FILE = "kafka/cameras.json" 
 BASE_URL = "https://giaothong.hochiminhcity.gov.vn/render/ImageHandler.ashx?id="
 BATCH_SIZE = 1          # batch cực nhỏ cho 2GB RAM
 BATCH_DELAY = 30         # delay 30s giữa batch
