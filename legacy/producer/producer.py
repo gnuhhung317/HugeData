@@ -122,12 +122,17 @@ def process_camera(cam):
         vehicle_counts = dict(Counter(vehicles))
 
         data = {
-            "camera": cam["display_name"],
+            "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "camera_id": cam_id,
             "latitude": cam["latitude"],
             "longitude": cam["longitude"],
+            "camera": cam["display_name"],
             "timestamp": datetime.datetime.utcnow().isoformat(),
-            "counts": vehicle_counts
+            "car_count": vehicle_counts.get('car', 0),
+            "bus_count": vehicle_counts.get('bus', 0),
+            "truck_count": vehicle_counts.get('truck', 0),
+            "motorcycle_count": vehicle_counts.get('motorcycle', 0),
+            "total_count": sum(vehicle_counts.values())
         }
 
         producer.send('traffic', value=data)
