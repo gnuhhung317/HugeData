@@ -8,3 +8,5 @@ orjson
 # Kafka client
 kafka-python
 
+# Dependency for Timezone awareness
+pytz

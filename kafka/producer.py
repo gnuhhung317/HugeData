@@ -13,6 +13,7 @@ import re
 import orjson
 from requests.adapters import HTTPAdapter, Retry
 import os
+import pytz
 
 CAMERA_JSON_FILE = "kafka/cameras.json" 
 BASE_URL = "https://giaothong.hochiminhcity.gov.vn/render/ImageHandler.ashx?id="
@@ -51,7 +52,7 @@ producer = KafkaProducer(
 # Using the official ultralytics:latest-python image may already provide the
 # correct device and runtime; we explicitly request CPU when calling predict.
 # ===============================
-model = YOLO('yolov8n.pt')
+model = YOLO('best.pt')
 
 # ===============================
 # Requests session with retry
@@ -144,13 +145,26 @@ def process_camera(cam):
         vehicles = [model.names[c] for c in classes if model.names[c] in TARGET_CLASSES]
         vehicle_counts = dict(Counter(vehicles))
 
+        car_count = vehicle_counts.get("car", 0)
+        truck_count = vehicle_counts.get("truck", 0)
+        bus_count = vehicle_counts.get("bus", 0)
+        motorcycle_count = vehicle_counts.get("motorcycle", 0)
+
+        vietnam_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+        current_time_vn = datetime.datetime.now(vietnam_tz)
+        # data format
+        # time, camera_id, latitude, longitude, camera, car_count, truck_count, bus_count, motorcycle_count
         data = {
-            "camera": cam["display_name"],
+            "time": current_time_vn.strftime("%Y-%m-%d %H:%M:%S"),
             "camera_id": cam_id,
             "latitude": cam["latitude"],
             "longitude": cam["longitude"],
-            "timestamp": datetime.datetime.utcnow().isoformat(),
-            "counts": vehicle_counts
+            "camera": cam["display_name"],
+            "car_count": car_count,
+            "bus_count": bus_count,
+            "truck_count": truck_count,
+            "motorcycle_count": motorcycle_count,
+            "total_count": car_count + bus_count + truck_count + motorcycle_count
         }
 
         producer.send('traffic', value=data)

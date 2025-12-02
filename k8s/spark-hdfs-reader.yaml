@@ -1,0 +1,32 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: spark-hdfs-reader
+  namespace: hugedata
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: spark-application:dev
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///app/hdfs_reader.py
+  sparkVersion: 3.5.1
+  sparkConf:
+    # Reuse the same JARs configuration as the main app
+    "spark.jars": "local:///opt/spark/jars/hadoop-aws-3.3.4.jar,local:///opt/spark/jars/aws-java-sdk-bundle-1.12.262.jar,local:///opt/spark/jars/spark-sql-kafka-0-10_2.12-3.5.1.jar,local:///opt/spark/jars/kafka-clients-3.5.1.jar,local:///opt/spark/jars/spark-token-provider-kafka-0-10_2.12-3.5.1.jar,local:///opt/spark/jars/commons-pool2-2.11.1.jar"
+  
+  driver:
+    cores: 1
+    memory: 512m
+    serviceAccount: default
+    env:
+      - name: HDFS_NAMENODE
+        value: "hdfs://hdfs-namenode:8020"
+  
+  executor:
+    instances: 1
+    cores: 1
+    memory: 512m
+    env:
+      - name: HDFS_NAMENODE
+        value: "hdfs://hdfs-namenode:8020"

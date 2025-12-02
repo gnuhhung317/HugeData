@@ -33,6 +33,8 @@ spec:
         value: "kafka.hugedata.svc.cluster.local:9092"
       - name: KAFKA_TOPIC
         value: "traffic"
+      - name: HDFS_NAMENODE
+        value: "hdfs://hdfs-namenode:8020"
     securityContext:
       runAsUser: 185
       runAsGroup: 185
@@ -52,6 +54,8 @@ spec:
         value: "kafka.hugedata.svc.cluster.local:9092"
       - name: KAFKA_TOPIC
         value: "traffic"
+      - name: HDFS_NAMENODE
+        value: "hdfs://hdfs-namenode:8020"
     securityContext:
       runAsUser: 185
       runAsGroup: 185
