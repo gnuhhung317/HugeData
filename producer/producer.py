@@ -14,11 +14,11 @@ import orjson
 from requests.adapters import HTTPAdapter, Retry
 import os
 
-CAMERA_JSON_FILE = "cameras.json"  # Dùng khi chạy từ root folder
+CAMERA_JSON_FILE = "producer/cameras.json"  # Dùng khi chạy từ root folder
 # CAMERA_JSON_FILE = "cameras.json"  # Uncomment nếu chạy từ trong kafka folder
 BASE_URL = "https://giaothong.hochiminhcity.gov.vn/render/ImageHandler.ashx?id="
-BATCH_SIZE = 8          # batch cực nhỏ cho 2GB RAM
-BATCH_DELAY = 10         # delay 30s giữa batch
+BATCH_SIZE = 30          # batch cực nhỏ cho 2GB RAM
+BATCH_DELAY = 0.2         # delay 30s giữa batch
 MAX_WORKERS = 3          # 1 thread để tiết kiệm RAM + CPU
 YOLO_CONF = 0.1
 TARGET_CLASSES = ['car', 'motorcycle', 'bus', 'truck']
@@ -47,7 +47,7 @@ producer = KafkaProducer(
 # ===============================
 # YOLO setup (CPU-only)
 # ===============================
-model = YOLO('best.pt').to('cpu')
+model = YOLO("yolov8n.pt").to('cpu')
 
 # ===============================
 # Requests session with retry

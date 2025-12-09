@@ -30,7 +30,7 @@ kubectl apply -f minio-bucket.yaml
 
 # 3 . start spark
 kubectl apply -f spark-app.yaml -n hugedata
-
+kubectl apply -f spark-realtime-app.yaml -n hugedata
 # 4. clean
 kubectl delete deployment --all -n hugedata
 kubectl delete pod spark-pi-python-driver -n hugedata
