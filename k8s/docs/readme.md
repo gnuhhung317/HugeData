@@ -12,14 +12,12 @@ minikube start --driver=docker --memory 4096 --cpus 4
 # hoặc đổi file dockerfile trong ./legacy/ vào thư mục spark để tải trực tiếp vào image.
 docker build -t spark-application:dev ./spark  
 docker build -t kafka-producer:dev ./kafka  
-docker build -t minio-local:dev ./minio  
 ```
 
 ### load images into minikube (nếu dùng minikube)
 ```bash
 minikube image load kafka-producer:dev  
 minikube image load spark-application:dev
-minikube image load minio-local:dev  # Chưa cần dùng đến, bỏ qua
 ```
 
 ### setup spark operator
@@ -48,12 +46,9 @@ kubectl apply -f k8s/kafka.yaml
 kubectl apply -f k8s/producer-deployment.yaml
 ```
 
-## 3. start minio / hdfs
+## 3. start hdfs
 ```bash
 kubectl apply -f k8s/hdfs/hdfs-cluster.yaml
-
-kubectl apply -f k8s/minio-deployment.yaml
-kubectl apply -f k8s/minio-bucket.yaml
 ```
 
 ## 4. start spark
@@ -75,10 +70,6 @@ kubectl describe sparkapplication spark-pi-python -n hugedata
 kubectl logs spark-pi-python-driver -n hugedata
 ```
 
-## port-forward minio webview
-```bash
-kubectl port-forward deployment/minio 9001:9001 9000:9000 -n hugedata
-```
 ## port-forward hdfs webview
 ```bash
 kubectl port-forward deployment/hdfs-namenode 9870:9870 -n hugedata
