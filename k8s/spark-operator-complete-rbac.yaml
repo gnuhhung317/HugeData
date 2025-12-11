@@ -77,7 +77,7 @@ metadata:
   namespace: hugedata
 subjects:
   - kind: ServiceAccount
-    name: default # Gán quyền cho SA "default" theo ý của bạn
+    name: default 
     namespace: hugedata
 roleRef:
   kind: Role

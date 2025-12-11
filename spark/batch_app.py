@@ -1,7 +1,7 @@
 import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col
-from pyspark.sql.types import StructType, StructField, StringType, MapType, IntegerType, DoubleType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 
 # -----------------------------------------------------------
 # Spark session (retain original _jsc Hadoop config semantics)
@@ -18,6 +18,7 @@ spark.sparkContext.setLogLevel("WARN")
 
 kafka_bootstrap = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 kafka_topic = os.environ.get("KAFKA_TOPIC", "traffic")
+kafka_group_id = os.environ.get("KAFKA_GROUP_ID", "spark-batch-group")
 
 # ---------------------------------
 # Define JSON schema for Kafka payload
@@ -43,6 +44,7 @@ df = (
     .format("kafka")
     .option("kafka.bootstrap.servers", kafka_bootstrap)
     .option("subscribe", kafka_topic)
+    .option("kafka.group.id", kafka_group_id)
     .option("startingOffsets", "earliest")
     .option("failOnDataLoss", "false")
     .load()

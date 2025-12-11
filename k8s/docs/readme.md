@@ -8,8 +8,6 @@ minikube start --driver=docker --memory 4096 --cpus 4
 
 ### setup local images
 ```bash
-# tải thủ công các thư viện .jar trong requirements.txt
-# hoặc đổi file dockerfile trong ./legacy/ vào thư mục spark để tải trực tiếp vào image.
 docker build -t spark-application:dev ./spark  
 docker build -t kafka-producer:dev ./kafka  
 ```
@@ -40,38 +38,73 @@ helm install spark-operator-1 spark-operator/spark-operator --namespace hugedata
 kubectl edit deployment spark-operator-1-controller -n hugedata
 ```
 
-## 2. start kafka / kafka producer
+## 2. start kafka / kafka producer / timescaledb
 ```bash
 kubectl apply -f k8s/kafka.yaml
+
+# realtime
+kubectl apply -f k8s/timescaledb.yaml
+
+# đợi kafka chạy xong
 kubectl apply -f k8s/producer-deployment.yaml
+```
+
+### deploy grafana
+```bash
+# realtime
+kubectl apply -f k8s/grafana.yaml
 ```
 
 ## 3. start hdfs
 ```bash
-kubectl apply -f k8s/hdfs/hdfs-cluster.yaml
+kubectl apply -f k8s/hdfs-cluster.yaml
 ```
 
-## 4. start spark
+## 4. setup timescaledb + grafana
+### initialize timescaledb schema
 ```bash
-kubectl apply -f k8s/spark-app.yaml -n hugedata
+# copy init.sql to pod
+kubectl cp timescaledb/init.sql hugedata/timescaledb-0:/tmp/init.sql
+
+# run init script
+kubectl exec timescaledb-0 -n hugedata -- psql -U postgres -d traffic -f /tmp/init.sql
+```
+
+## 5. start spark
+```bash
+kubectl apply -f k8s/spark-batch-app.yaml -n hugedata
+kubectl apply -f k8s/spark-realtime-app.yaml -n hugedata
 kubectl apply -f k8s/spark-hdfs-reader.yaml -n hugedata
 ```
 
-## clean (optional)
+### verify data
 ```bash
-kubectl delete deployment --all -n hugedata
-kubectl delete pod spark-pi-python-driver -n hugedata
-kubectl scale statefulset kafka -n hugedata --replicas=0
+# check record count
+kubectl exec timescaledb-0 -n hugedata -- psql -U postgres -d traffic -c "SELECT COUNT(*) FROM traffic_metrics;"
+
+# check latest data
+kubectl exec timescaledb-0 -n hugedata -- psql -U postgres -d traffic -c "SELECT time, camera_id, total_count FROM traffic_metrics ORDER BY time DESC LIMIT 5;"
 ```
 
-## debug (optional)
+
+### access grafana
 ```bash
-kubectl describe sparkapplication spark-pi-python -n hugedata
-kubectl logs spark-pi-python-driver -n hugedata
+# port-forward grafana
+kubectl port-forward svc/grafana 3000:3000 -n hugedata
+
+# open browser: http://localhost:3000
+# login: admin/admin
+```
+## port-forward services
+
+### hdfs webview
+```bash
+kubectl port-forward pod/hdfs-namenode-0 9870:9870 -n hugedata
+# open: http://localhost:9870
 ```
 
-## port-forward hdfs webview
+### timescaledb
 ```bash
-kubectl port-forward deployment/hdfs-namenode 9870:9870 -n hugedata
-```
+kubectl port-forward svc/timescaledb 5432:5432 -n hugedata
+# connect: psql -h localhost -U postgres -d traffic
 ```
