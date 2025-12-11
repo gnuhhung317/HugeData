@@ -1,10 +1,13 @@
-# ====== HDFS: NAMENODE ======
+# ===========================
+# HDFS NAMENODE
+# ===========================
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: hdfs-namenode
   namespace: hugedata
 spec:
+  serviceName: hdfs-namenode
   replicas: 1
   selector:
     matchLabels:
@@ -22,20 +25,25 @@ spec:
           value: hadoop-cluster
         - name: CORE_CONF_fs_defaultFS
           value: hdfs://hdfs-namenode:8020
-        - name: HDFS_CONF_dfs_namenode_datanode_registration_ip_hostname_check
-          value: "false"
         - name: HDFS_CONF_dfs_permissions
           value: "false"
-        # -----------------------------------------
+        - name: HDFS_CONF_dfs_namenode_datanode_registration_ip_hostname_check
+          value: "false"
         ports:
         - containerPort: 9870
         - containerPort: 8020
         volumeMounts:
         - name: hdfs-name
           mountPath: /hadoop/dfs/name
-      volumes:
-      - name: hdfs-name
-        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: hdfs-name
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 5Gi
+
 ---
 apiVersion: v1
 kind: Service
@@ -50,9 +58,11 @@ spec:
     name: web
   selector:
     app: hdfs-namenode
+
+# ===========================
+# HDFS DATANODE HEADLESS SERVICE
+# ===========================
 ---
-# ====== HDFS: DATANODE======
-# Service này sẽ tạo DNS record cho từng Pod của StatefulSet
 apiVersion: v1
 kind: Service
 metadata:
@@ -65,15 +75,18 @@ spec:
   ports:
   - port: 9864
     name: data
+
+# ===========================
+# HDFS DATANODE STATEFULSET
+# ===========================
 ---
-# StatefulSet cung cấp các tên DNS ổn định (ví dụ: hdfs-datanode-0, hdfs-datanode-1)
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: hdfs-datanode
   namespace: hugedata
 spec:
-  serviceName: hdfs-datanode-headless # Liên kết với Headless Service
+  serviceName: hdfs-datanode-headless
   replicas: 2
   selector:
     matchLabels:
@@ -91,17 +104,18 @@ spec:
           value: hdfs://hdfs-namenode:8020
         - name: SERVICE_PRECONDITION
           value: "hdfs-namenode:8020"
+        - name: HDFS_CONF_dfs_namenode_datanode_registration_ip_hostname_check
+          value: "false"
         ports:
         - containerPort: 9864
         volumeMounts:
         - name: hdfs-data
           mountPath: /hadoop/dfs/data
-  # Sử dụng volumeClaimTemplates để mỗi Pod DataNode có bộ lưu trữ riêng
   volumeClaimTemplates:
   - metadata:
       name: hdfs-data
     spec:
-      accessModes: [ "ReadWriteOnce" ]
+      accessModes: ["ReadWriteOnce"]
       resources:
         requests:
           storage: 5Gi

@@ -4,7 +4,7 @@ USER root
 
 WORKDIR /app
 
-COPY main.py .
+COPY *.py .
 
 COPY ./jars/hadoop-aws-3.3.4.jar /opt/spark/jars/
 COPY ./jars/aws-java-sdk-bundle-1.12.262.jar /opt/spark/jars/
@@ -12,6 +12,7 @@ COPY ./jars/spark-sql-kafka-0-10_2.12-3.5.1.jar /opt/spark/jars/
 COPY ./jars/kafka-clients-3.5.1.jar /opt/spark/jars/
 COPY ./jars/spark-token-provider-kafka-0-10_2.12-3.5.1.jar /opt/spark/jars/
 COPY ./jars/commons-pool2-2.11.1.jar /opt/spark/jars/
+COPY ./jars/postgresql-42.7.3.jar /opt/spark/jars/
 
 RUN chown -R 185:185 /app /opt/spark/jars
 

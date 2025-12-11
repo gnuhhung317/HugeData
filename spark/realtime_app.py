@@ -1,7 +1,7 @@
 import os
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, current_timestamp, when, lit, coalesce
-from pyspark.sql.types import StructType, StructField, StringType, MapType, IntegerType, DoubleType, TimestampType
+from pyspark.sql.functions import from_json, col
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 
 # -----------------------------------------------------------
 # Spark session (retain original _jsc Hadoop config semantics)
@@ -28,27 +28,33 @@ spark.sparkContext.setLogLevel("WARN")
 
 kafka_bootstrap = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 kafka_topic = os.environ.get("KAFKA_TOPIC", "traffic")
+kafka_group_id = os.environ.get("KAFKA_GROUP_ID", "spark-realtime-group")
 
 # ---------------------------------
-# Define JSON schema for Kafka payload
+# define JSON schema for Kafka payload (matching producer.py format)
 # ---------------------------------
 schema = StructType([
-    StructField("camera", StringType()),
+    StructField("time", StringType()),
     StructField("camera_id", StringType()),
     StructField("latitude", DoubleType()),
     StructField("longitude", DoubleType()),
-    StructField("timestamp", StringType()),
-    StructField("counts", MapType(StringType(), IntegerType())),
+    StructField("camera", StringType()),
+    StructField("car_count", IntegerType()),
+    StructField("bus_count", IntegerType()),
+    StructField("truck_count", IntegerType()),
+    StructField("motorcycle_count", IntegerType()),
+    StructField("total_count", IntegerType()),
 ])
 
 # ---------------------------------
-# Read stream from Kafka
+# read stream from Kafka
 # ---------------------------------
 df = (
     spark.readStream
     .format("kafka")
     .option("kafka.bootstrap.servers", kafka_bootstrap)
     .option("subscribe", kafka_topic)
+    .option("kafka.group.id", kafka_group_id)
     .option("startingOffsets", "earliest")
     .option("failOnDataLoss", "false")
     .load()
@@ -58,24 +64,19 @@ df_string = df.selectExpr("CAST(value AS STRING)")
 df_parsed = df_string.select(from_json(col("value"), schema).alias("data")).select("data.*")
 
 # ---------------------------------
-# Transform data for TimescaleDB
+# transform data for TimescaleDB
 # ---------------------------------
 df_timescale = df_parsed.select(
-    col("timestamp").cast("timestamp").alias("time"),
+    col("time").cast("timestamp").alias("time"),
     col("camera_id"),
     col("camera").alias("camera_name"),
     col("latitude"),
     col("longitude"),
-    coalesce(col("counts.car"), lit(0)).alias("car_count"),
-    coalesce(col("counts.motorcycle"), lit(0)).alias("motorcycle_count"),
-    coalesce(col("counts.bus"), lit(0)).alias("bus_count"),
-    coalesce(col("counts.truck"), lit(0)).alias("truck_count"),
-    (
-        coalesce(col("counts.car"), lit(0)) + 
-        coalesce(col("counts.motorcycle"), lit(0)) + 
-        coalesce(col("counts.bus"), lit(0)) + 
-        coalesce(col("counts.truck"), lit(0))
-    ).alias("total_count")
+    col("car_count"),
+    col("motorcycle_count"),
+    col("bus_count"),
+    col("truck_count"),
+    col("total_count")
 )
 
 # ---------------------------------

@@ -20,4 +20,6 @@ spec:
         env:
         - name: KAFKA_BOOTSTRAP_SERVERS
           value: "kafka.hugedata.svc.cluster.local:9092"
+        - name: TZ
+          value: "Asia/Ho_Chi_Minh"
        

@@ -13,7 +13,7 @@ spec:
   # when available. If your cluster requires it (kind/minikube), you can
   # alternatively set this to `Never` to always avoid pulling from a registry.
   imagePullPolicy: IfNotPresent
-  mainApplicationFile: local:///app/main.py  # This is correct
+  mainApplicationFile: local:///app/batch_app.py  # This is correct
   sparkVersion: 3.5.1
   sparkConf:
     # --- FIX IS HERE ---
@@ -33,6 +33,10 @@ spec:
         value: "kafka.hugedata.svc.cluster.local:9092"
       - name: KAFKA_TOPIC
         value: "traffic"
+      - name: KAFKA_GROUP_ID
+        value: "spark-batch-group"
+      - name: HDFS_NAMENODE
+        value: "hdfs://hdfs-namenode:8020"
     securityContext:
       runAsUser: 185
       runAsGroup: 185
@@ -52,6 +56,10 @@ spec:
         value: "kafka.hugedata.svc.cluster.local:9092"
       - name: KAFKA_TOPIC
         value: "traffic"
+      - name: KAFKA_GROUP_ID
+        value: "spark-batch-group"
+      - name: HDFS_NAMENODE
+        value: "hdfs://hdfs-namenode:8020"
     securityContext:
       runAsUser: 185
       runAsGroup: 185

@@ -7,9 +7,9 @@ spec:
   type: Python
   pythonVersion: "3"
   mode: cluster
-  image: gnuhhung317/spark-realtime-app
-  imagePullPolicy: Always
-  mainApplicationFile: local:///app/main.py  # This is correct
+  image: spark-application:dev
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///app/realtime_app.py
   sparkVersion: 3.5.1
   sparkConf:
     "spark.jars.ivy": "/tmp/.ivy2"
@@ -21,7 +21,7 @@ spec:
     coreRequest: "100m"
     coreLimit: "300m"
     memory: 512m
-    serviceAccount: spark
+    serviceAccount: default
     labels:
       version: "3.5.1"
     env:
@@ -35,6 +35,8 @@ spec:
         value: "kafka.hugedata.svc.cluster.local:9092"
       - name: KAFKA_TOPIC
         value: "traffic"
+      - name: KAFKA_GROUP_ID
+        value: "spark-realtime-group"
       - name: TIMESCALEDB_URL
         value: "jdbc:postgresql://timescaledb.hugedata.svc.cluster.local:5432/traffic"
       - name: TIMESCALEDB_USER
@@ -71,6 +73,8 @@ spec:
         value: "kafka.hugedata.svc.cluster.local:9092"
       - name: KAFKA_TOPIC
         value: "traffic"
+      - name: KAFKA_GROUP_ID
+        value: "spark-realtime-group"
       - name: TIMESCALEDB_URL
         value: "jdbc:postgresql://timescaledb.hugedata.svc.cluster.local:5432/traffic"
       - name: TIMESCALEDB_USER

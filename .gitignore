@@ -17,6 +17,8 @@ venv/
 .env/
 .envrc
 
+crawl/
+
 # Logs
 
 *.log
@@ -36,7 +38,7 @@ spark/jars/*
 # ==============================
 # YOLO model weights or any large .pt file
 
-*.pt
+# *.pt
 *.onnx
 
 # ==============================
