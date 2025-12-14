@@ -1,6 +1,8 @@
 import os
+import time
+import logging
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col
+from pyspark.sql.functions import from_json, col, expr, current_timestamp
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 
 # -----------------------------------------------------------
@@ -8,27 +10,33 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType, 
 # -----------------------------------------------------------
 spark = (
     SparkSession.builder
-    .appName("KafkaTrafficLocalTest")
+    .appName("KafkaTrafficRealtimeApp")
     .getOrCreate()
 )
 
 spark.sparkContext.setLogLevel("WARN")
 
-# Keep the _jsc Hadoop configuration EXACTLY like the previous simple version
-# (no additional bucket-scoped overrides or extra keys beyond what existed).
-# def load_config(sc):
-#     sc._jsc.hadoopConfiguration().set("fs.s3a.access.key", "minioadmin")
-#     sc._jsc.hadoopConfiguration().set("fs.s3a.secret.key", "minioadmin")
-#     sc._jsc.hadoopConfiguration().set("fs.s3a.path.style.access", "true")
-#     sc._jsc.hadoopConfiguration().set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
-#     sc._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "http://minio:9000")
-#     sc._jsc.hadoopConfiguration().set("fs.s3a.connection.ssl.enabled", "false")
+# ---------------------------------
+# Logging setup
+# ---------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger("realtime_app")
 
-# load_config(spark.sparkContext)
 
-kafka_bootstrap = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
-kafka_topic = os.environ.get("KAFKA_TOPIC", "traffic")
-kafka_group_id = os.environ.get("KAFKA_GROUP_ID", "spark-realtime-group")
+KAFKA_BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+KAFKA_TOPIC = os.environ.get("KAFKA_TOPIC", "traffic")
+KAFKA_GROUP_ID = os.environ.get("KAFKA_GROUP_ID", "spark-realtime-group")
+KAFKA_STARTING_OFFSETS = os.environ.get("KAFKA_STARTING_OFFSETS", "earliest")
+
+TRIGGER_TIMESCALE = os.environ.get("TRIGGER_TIMESCALE", "10 seconds")
+TRIGGER_CONSOLE = os.environ.get("TRIGGER_CONSOLE", "5 seconds")
+
+CHECKPOINT_BASE = os.environ.get("CHECKPOINT_BASE", "/app/data/checkpoint")
+CHECKPOINT_TIMESCALE = os.path.join(CHECKPOINT_BASE, "traffic_timescaledb")
+CHECKPOINT_CONSOLE = os.path.join(CHECKPOINT_BASE, "traffic_console")
 
 # ---------------------------------
 # define JSON schema for Kafka payload (matching producer.py format)
@@ -52,21 +60,32 @@ schema = StructType([
 df = (
     spark.readStream
     .format("kafka")
-    .option("kafka.bootstrap.servers", kafka_bootstrap)
-    .option("subscribe", kafka_topic)
-    .option("kafka.group.id", kafka_group_id)
-    .option("startingOffsets", "earliest")
+    .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP)
+    .option("subscribe", KAFKA_TOPIC)
+    .option("kafka.group.id", KAFKA_GROUP_ID)
+    .option("startingOffsets", KAFKA_STARTING_OFFSETS)
     .option("failOnDataLoss", "false")
     .load()
 )
 
 df_string = df.selectExpr("CAST(value AS STRING)")
-df_parsed = df_string.select(from_json(col("value"), schema).alias("data")).select("data.*")
+df_with_json = df_string.select(from_json(col("value"), schema).alias("data"), col("value").alias("raw_value"))
+df_parsed = df_with_json.where(col("data").isNotNull()).select("data.*")
 
 # ---------------------------------
 # transform data for TimescaleDB
 # ---------------------------------
-df_timescale = df_parsed.select(
+df_valid = (
+    df_parsed
+    .withColumn("is_valid",
+                (col("car_count") >= 0) & (col("bus_count") >= 0) &
+                (col("truck_count") >= 0) & (col("motorcycle_count") >= 0) &
+                (col("total_count") >= 0))
+    .filter(col("is_valid"))
+    .drop("is_valid")
+)
+
+df_timescale = df_valid.select(
     col("time").cast("timestamp").alias("time"),
     col("camera_id"),
     col("camera").alias("camera_name"),
@@ -76,92 +95,97 @@ df_timescale = df_parsed.select(
     col("motorcycle_count"),
     col("bus_count"),
     col("truck_count"),
-    col("total_count")
+    col("total_count"),
+    current_timestamp().alias("ingest_ts")
 )
 
-# ---------------------------------
-# Output destinations
-# ---------------------------------
-# bucket_name = os.environ.get("MINIO_BUCKET", "traffic-data")
-# output_path = f"s3a://{bucket_name}/traffic_stream"
-# checkpoint_path = f"s3a://{bucket_name}/checkpoint/traffic_stream"
-
-# # Start S3A sink; on failure, fallback to local FS inside container
-# try:
-#     (
-#         df_parsed.writeStream
-#         .outputMode("append")
-#         .format("parquet")
-#         .option("path", output_path)
-#         .option("checkpointLocation", checkpoint_path)
-#         .trigger(processingTime="10 seconds")
-#         .start()
-#     )
-#     print(f"[INFO] Parquet sink to S3A started -> {output_path}")
-# except Exception as e:
-#     print("[WARN] Could not start Parquet S3A sink. Falling back to local FS. Error:", e)
-#     local_output_path = "/app/data/traffic_stream"
-#     local_checkpoint_path = "/app/data/checkpoint/traffic_stream"
-#     (
-#         df_parsed.writeStream
-#         .outputMode("append")
-#         .format("parquet")
-#         .option("path", local_output_path)
-#         .option("checkpointLocation", local_checkpoint_path)
-#         .trigger(processingTime="10 seconds")
-#         .start()
-#     )
-#     print(f"[INFO] Fallback Parquet sink started -> {local_output_path}")
 
 # ---------------------------------
 # Write to TimescaleDB (PostgreSQL)
 # ---------------------------------
-timescaledb_url = os.environ.get("TIMESCALEDB_URL", "jdbc:postgresql://timescaledb.hugedata.svc.cluster.local:5432/traffic")
-timescaledb_user = os.environ.get("TIMESCALEDB_USER", "postgres")
-timescaledb_password = os.environ.get("TIMESCALEDB_PASSWORD", "postgres")
-timescaledb_table = os.environ.get("TIMESCALEDB_TABLE", "traffic_metrics")
+TIMESCALEDB_URL = os.environ.get("TIMESCALEDB_URL", "jdbc:postgresql://timescaledb.hugedata.svc.cluster.local:5432/traffic")
+TIMESCALEDB_USER = os.environ.get("TIMESCALEDB_USER", "postgres")
+TIMESCALEDB_PASSWORD = os.environ.get("TIMESCALEDB_PASSWORD", "postgres")
+TIMESCALEDB_TABLE = os.environ.get("TIMESCALEDB_TABLE", "traffic_metrics")
 
 def write_to_timescaledb(batch_df, batch_id):
-    """Write each batch to TimescaleDB"""
-    if batch_df.count() > 0:
+    """Write each micro-batch to TimescaleDB with basic retries."""
+    if batch_df is None:
+        return
+
+    # Cache once to avoid multiple actions
+    batch_df_cached = batch_df.persist()
+    row_count = batch_df_cached.count()
+    if row_count == 0:
+        return
+
+    max_retries = int(os.environ.get("DB_WRITE_MAX_RETRIES", "3"))
+    backoff_sec = float(os.environ.get("DB_WRITE_BACKOFF_SEC", "2"))
+
+    last_err = None
+    for attempt in range(1, max_retries + 1):
         try:
-            batch_df.write \
+            batch_df_cached.write \
                 .format("jdbc") \
-                .option("url", timescaledb_url) \
-                .option("dbtable", timescaledb_table) \
-                .option("user", timescaledb_user) \
-                .option("password", timescaledb_password) \
+                .option("url", TIMESCALEDB_URL) \
+                .option("dbtable", TIMESCALEDB_TABLE) \
+                .option("user", TIMESCALEDB_USER) \
+                .option("password", TIMESCALEDB_PASSWORD) \
                 .option("driver", "org.postgresql.Driver") \
                 .mode("append") \
                 .save()
-            print(f"[INFO] Batch {batch_id}: Written {batch_df.count()} records to TimescaleDB")
+            logger.info(f"Batch %s: wrote %s rows to TimescaleDB (attempt %s)", batch_id, row_count, attempt)
+            last_err = None
+            break
         except Exception as e:
-            print(f"[ERROR] Batch {batch_id}: Failed to write to TimescaleDB - {e}")
+            last_err = e
+            logger.error(f"Batch %s: write failed (attempt %s/%s): %s", batch_id, attempt, max_retries, e)
+            time.sleep(backoff_sec)
+
+    if last_err is not None:
+        logger.critical(f"Batch %s: failed to write after %s attempts: %s", batch_id, max_retries, last_err)
 
 # Start TimescaleDB sink
-checkpoint_timescale = "/app/data/checkpoint/traffic_timescaledb"
 try:
-    (
+    timescale_query = (
         df_timescale.writeStream
+        .outputMode("append")
+        .queryName("timescale_sink")
         .foreachBatch(write_to_timescaledb)
-        .option("checkpointLocation", checkpoint_timescale)
-        .trigger(processingTime="10 seconds")
+        .option("checkpointLocation", CHECKPOINT_TIMESCALE)
+        .trigger(processingTime=TRIGGER_TIMESCALE)
         .start()
     )
-    print(f"[INFO] TimescaleDB sink started")
+    logger.info("TimescaleDB sink started")
 except Exception as e:
-    print(f"[ERROR] Could not start TimescaleDB sink: {e}")
+    logger.critical("Could not start TimescaleDB sink: %s", e)
 
 # Also log to console for quick verification
-(
-    df.selectExpr("CAST(value AS STRING)")
-    .writeStream
-    .format("console")
-    .option("truncate", False)
-    .trigger(processingTime="5 seconds")
-    .start()
-)
+try:
+    console_query = (
+        df.selectExpr("CAST(value AS STRING)")
+        .writeStream
+        .outputMode("append")
+        .format("console")
+        .option("truncate", False)
+        .option("checkpointLocation", CHECKPOINT_CONSOLE)
+        .queryName("console_sink")
+        .trigger(processingTime=TRIGGER_CONSOLE)
+        .start()
+    )
+except Exception as e:
+    logger.error("Could not start console sink: %s", e)
 
-spark.streams.awaitAnyTermination()
+try:
+    spark.streams.awaitAnyTermination()
+except KeyboardInterrupt:
+    logger.info("Termination requested; stopping active streams...")
+    for q in spark.streams.active:
+        try:
+            logger.info("Stopping query: %s", q.name)
+            q.stop()
+        except Exception as e:
+            logger.error("Failed to stop query %s: %s", q.name, e)
+    logger.info("Shutdown complete")
 
 
