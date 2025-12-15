@@ -7,9 +7,9 @@ spec:
   type: Python
   pythonVersion: "3"
   mode: cluster
-  image: spark-application:dev
-  imagePullPolicy: IfNotPresent
-  mainApplicationFile: local:///app/realtime_app.py
+  image: gnuhhung317/spark-realtime-app
+  imagePullPolicy: Always
+  mainApplicationFile: local:///app/main.py
   sparkVersion: 3.5.1
   sparkConf:
     "spark.jars.ivy": "/tmp/.ivy2"

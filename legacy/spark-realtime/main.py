@@ -26,7 +26,7 @@ spark.sparkContext.setLogLevel("WARN")
 
 # load_config(spark.sparkContext)
 
-kafka_bootstrap = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+kafka_bootstrap = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9094")
 kafka_topic = os.environ.get("KAFKA_TOPIC", "traffic")
 kafka_group_id = os.environ.get("KAFKA_GROUP_ID", "spark-realtime-group")
 
@@ -60,8 +60,7 @@ df = (
 )
 
 df_string = df.selectExpr("CAST(value AS STRING)")
-# Keep raw value for debugging
-df_parsed = df_string.select(col("value"), from_json(col("value"), schema).alias("data")).select("value", "data.*")
+df_parsed = df_string.select(from_json(col("value"), schema).alias("data")).select("data.*")
 
 # ---------------------------------
 # transform data for TimescaleDB
@@ -97,9 +96,8 @@ df_timescale = df_good.select(
 )
 
 # Log bad rows to console for diagnosis (without breaking the stream)
-# Now includes the raw 'value' column we preserved
 (df_bad
-    .select("value", "safe_time", "camera_id", "time")
+    .selectExpr("CAST(struct(*) AS STRING) AS value")
     .writeStream
     .format("console")
     .option("truncate", False)
