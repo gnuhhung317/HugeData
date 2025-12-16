@@ -533,23 +533,66 @@ elif page == "⚠️ Alerts":
     st.subheader("🔴 High Traffic Alerts")
     
     threshold = st.slider("Alert Threshold", 50, 500, 200)
-    
+    detection_mode = st.radio("Detection Mode", ["Instant (latest snapshot)", "Average (last N minutes)"], index=0)
+
     latest = get_latest_metrics()
-    alerts = latest[latest['total_count'] > threshold].copy()
-    
+
+    def _normalize_counts(df, col_name):
+        if df is None or df.empty:
+            return df
+        df = df.copy()
+        if col_name in df.columns:
+            df[col_name] = pd.to_numeric(df[col_name], errors='coerce').fillna(0).astype(int)
+        return df
+
+    alerts = pd.DataFrame()
+
+    # Instant mode: use latest snapshot
+    if detection_mode.startswith("Instant"):
+        if latest is None or latest.empty:
+            st.info("No latest snapshot available; you can try the average-based detection.")
+        else:
+            latest = _normalize_counts(latest, 'total_count')
+            alerts = latest[latest['total_count'] > threshold].copy()
+            if not alerts.empty:
+                alerts = alerts.rename(columns={'total_count': 'vehicle_count'})
+
+    # Average mode or fallback: compute average over recent minutes
+    if detection_mode.startswith("Average") or (alerts is None or alerts.empty):
+        minutes = st.slider("Average window (minutes)", 5, 120, 30)
+        query = """
+        SELECT 
+            camera_name,
+            camera_id,
+            AVG(total_count) as avg_count,
+            MAX(time) as time
+        FROM traffic_metrics
+        WHERE time >= NOW() - INTERVAL '%s minutes'
+        GROUP BY camera_name, camera_id
+        HAVING AVG(total_count) > %s
+        ORDER BY avg_count DESC
+        """
+        avg_df = fetch_data(query, (minutes, threshold))
+        avg_df = _normalize_counts(avg_df, 'avg_count')
+        if avg_df is not None and not avg_df.empty:
+            avg_df = avg_df.rename(columns={'avg_count': 'vehicle_count'})
+            alerts = avg_df.copy()
+
+    # Display results
     if not alerts.empty:
-        alerts['alert_level'] = alerts['total_count'].apply(
+        alerts['alert_level'] = alerts['vehicle_count'].apply(
             lambda x: '🔴 Critical' if x > threshold * 1.5 else '🟡 Warning'
         )
-        
-        display_alerts = alerts[['camera_name', 'total_count', 'alert_level', 'time']].copy()
+        # Ensure time column exists
+        if 'time' not in alerts.columns:
+            alerts['time'] = pd.NaT
+        display_alerts = alerts[['camera_name', 'vehicle_count', 'alert_level', 'time']].copy()
         display_alerts.columns = ['Camera', 'Vehicle Count', 'Alert Level', 'Time']
-        
-        st.warning(f"⚠️ {len(alerts)} cameras above threshold!")
+        st.warning(f"⚠️ {len(display_alerts)} cameras above threshold!")
         st.dataframe(display_alerts, use_container_width=True, hide_index=True)
     else:
         st.success("✅ No high traffic alerts")
-    
+
     # Sudden spike detection
     st.subheader("📈 Recent Spike Detection")
     st.info("Detecting cameras with sudden traffic increase (> 50% from average)")
