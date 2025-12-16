@@ -17,8 +17,8 @@ import pytz
 
 CAMERA_JSON_FILE = "cameras.json" 
 BASE_URL = "https://giaothong.hochiminhcity.gov.vn/render/ImageHandler.ashx?id="
-BATCH_SIZE = 20          # batch cực nhỏ cho 2GB RAM
-BATCH_DELAY = 30         # delay 30s giữa batch
+BATCH_SIZE = 40          # batch cực nhỏ cho 2GB RAM
+BATCH_DELAY = 0.2         # delay 0.2s giữa batch
 MAX_WORKERS = 3          # 1 thread để tiết kiệm RAM + CPU
 YOLO_CONF = 0.1
 TARGET_CLASSES = ['car', 'motorcycle', 'bus', 'truck']

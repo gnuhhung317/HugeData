@@ -95,6 +95,9 @@ kubectl port-forward svc/grafana 3000:3000 -n hugedata
 # open browser: http://localhost:3000
 # login: admin/admin
 ```
+### start streamlit dashboard
+kubectl apply -f k8s\streamlit-dashboard.yaml
+kubectl port-forward svc/streamlit-dashboard 8501 -n hugedata
 ## port-forward services
 
 ### hdfs webview
