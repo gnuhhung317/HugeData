@@ -595,9 +595,64 @@ elif page == "⚠️ Alerts":
 
     # Sudden spike detection
     st.subheader("📈 Recent Spike Detection")
-    st.info("Detecting cameras with sudden traffic increase (> 50% from average)")
-    
-    # Add more sophisticated anomaly detection here
+    st.info("Detecting cameras with sudden traffic increase compared to the average over the last 1 hour")
+
+    # Allow user to set multiplier (1.0 = greater than average)
+    multiplier = st.slider("Spike multiplier (x average in last 1 hour)", 1.0, 3.0, 1.0, 0.1)
+
+    latest = get_latest_metrics()
+    if latest is None or latest.empty:
+        st.info("No latest snapshot available for spike detection.")
+    else:
+        # Fetch 1-hour averages per camera
+        query = """
+        SELECT camera_id, camera_name, AVG(total_count) as avg_last_hour
+        FROM traffic_metrics
+        WHERE time >= NOW() - INTERVAL '1 hour'
+        GROUP BY camera_id, camera_name
+        """
+        avg_df = fetch_data(query)
+
+        if avg_df is None or avg_df.empty:
+            st.info("Not enough recent data to compute 1-hour averages.")
+        else:
+            # Normalize and merge
+            latest_norm = _normalize_counts(latest, 'total_count')[['camera_id','camera_name','total_count','time']].copy()
+            avg_df = avg_df.copy()
+            avg_df['avg_last_hour'] = pd.to_numeric(avg_df['avg_last_hour'], errors='coerce').fillna(0).astype(float)
+
+            merged = pd.merge(latest_norm, avg_df[['camera_id','avg_last_hour']], on='camera_id', how='left')
+            merged['avg_last_hour'] = merged['avg_last_hour'].fillna(0)
+
+            # Detect spikes where latest > multiplier * avg_last_hour
+            merged['spike'] = merged['total_count'] > (merged['avg_last_hour'] * float(multiplier))
+            spike_df = merged[merged['spike']].copy()
+
+            if spike_df.empty:
+                st.success("✅ No recent spikes detected")
+            else:
+                # Compute percent increase where possible
+                def _pct_inc(row):
+                    if row['avg_last_hour'] == 0:
+                        return None
+                    return (row['total_count'] / row['avg_last_hour'] - 1) * 100
+
+                spike_df['percent_increase'] = spike_df.apply(_pct_inc, axis=1)
+                spike_df['percent_increase'] = spike_df['percent_increase'].map(lambda x: f"{x:.1f}%" if pd.notna(x) else "N/A")
+
+                display = spike_df[['camera_name','total_count','avg_last_hour','percent_increase','time']].copy()
+                display.columns = ['Camera','Latest','Avg(1h)','Increase','Time']
+
+                # Add alert level using the same threshold logic used by high-traffic alerts
+                display['Alert Level'] = display['Latest'].apply(
+                    lambda x: '🔴 Critical' if x > threshold * 1.5 else '🟡 Warning'
+                )
+                # Reorder columns for readability
+                display = display[['Camera','Latest','Avg(1h)','Increase','Alert Level','Time']]
+
+                num_critical = int((display['Alert Level'] == '🔴 Critical').sum())
+                st.warning(f"⚠️ {len(display)} cameras exceeded {multiplier}× the 1-hour average ({num_critical} critical)")
+                st.dataframe(display, use_container_width=True, hide_index=True)
 
 # Footer
 st.markdown("---")
