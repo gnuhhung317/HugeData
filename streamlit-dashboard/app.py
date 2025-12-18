@@ -558,7 +558,7 @@ elif page == "⚠️ Alerts":
                 alerts = alerts.rename(columns={'total_count': 'vehicle_count'})
 
     # Average mode or fallback: compute average over recent minutes
-    if detection_mode.startswith("Average") or (alerts is None or alerts.empty):
+    if detection_mode.startswith("Average"):
         minutes = st.slider("Average window (minutes)", 5, 120, 30)
         query = """
         SELECT 
@@ -567,7 +567,7 @@ elif page == "⚠️ Alerts":
             AVG(total_count) as avg_count,
             MAX(time) as time
         FROM traffic_metrics
-        WHERE time >= NOW() - INTERVAL '%s minutes'
+        WHERE time >= NOW() - (%s * INTERVAL '1 minute')
         GROUP BY camera_name, camera_id
         HAVING AVG(total_count) > %s
         ORDER BY avg_count DESC
