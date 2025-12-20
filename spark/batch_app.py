@@ -79,7 +79,8 @@ hdfs_checkpoint_path = f"{hdfs_namenode}/traffic_data/checkpoints/traffic_stream
     .option("path", hdfs_output_path)
     .option("checkpointLocation", hdfs_checkpoint_path)
     .partitionBy("year", "month", "day", "hour")
-    .trigger(processingTime="10 seconds")
+    # Spark thực hiện gom data trong 2 phút mỗi lần ghi vào hdfs 
+    .trigger(processingTime="2 minutes") 
     .start()
 )
 

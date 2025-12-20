@@ -3,17 +3,25 @@ kind: SparkApplication
 metadata:
   name: spark-hdfs-reader
   namespace: hugedata
+
 spec:
   type: Python
   pythonVersion: "3"
   mode: cluster
+
   image: spark-application:dev
   imagePullPolicy: IfNotPresent
+
   mainApplicationFile: local:///app/hdfs_reader.py
   sparkVersion: 3.5.1
 
   sparkConf:
-    spark.hadoop.fs.defaultFS: hdfs://hdfs-namenode:8020
+    spark.hadoop.fs.defaultFS: "hdfs://hdfs-namenode:8020"
+
+    spark.cassandra.connection.host: "cassandra.hugedata.svc.cluster.local"
+    spark.cassandra.connection.port: "9042"
+
+    spark.jars: "local:///opt/spark/jars/spark-cassandra-connector-assembly_2.12-3.5.1.jar"
 
   driver:
     cores: 1
