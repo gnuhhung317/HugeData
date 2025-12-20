@@ -35,10 +35,23 @@ kubectl cp $INIT_FILE "$NAMESPACE/cassandra-client:/tmp/init.cql"
 Write-Host "running init.cql script..." -ForegroundColor Cyan
 kubectl exec -n $NAMESPACE cassandra-client -- `
     cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -f /tmp/init.cql
-
 Write-Host "verifying schema..." -ForegroundColor Cyan
 kubectl exec -n $NAMESPACE cassandra-client -- `
     cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e "DESCRIBE KEYSPACE traffic_data;"
+
+$SEED_FILE = "cassandra/seed_cameras.cql"
+if (Test-Path $SEED_FILE) {
+    Write-Host "seed file found ($SEED_FILE), copying to pod..." -ForegroundColor Cyan
+    kubectl cp $SEED_FILE "$NAMESPACE/cassandra-client:/tmp/seed_cameras.cql"
+    
+    Write-Host "executing seed data insertion..." -ForegroundColor Cyan
+    kubectl exec -n $NAMESPACE cassandra-client -- `
+        cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -f /tmp/seed_cameras.cql
+    
+    Write-Host "seed data inserted successfully." -ForegroundColor Green
+} else {
+    Write-Host "warning: seed file $SEED_FILE not found." -ForegroundColor Yellow
+}
 
 Write-Host "`ncassandra setup completed successfully!" -ForegroundColor Green
 Write-Host ""

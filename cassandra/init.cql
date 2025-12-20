@@ -40,3 +40,24 @@ CREATE TABLE IF NOT EXISTS traffic_daily (
   peak_count int,
   PRIMARY KEY ((camera_id), date)
 ) WITH CLUSTERING ORDER BY (date DESC);
+
+-- create table for windowed statisics (30m, 1h)
+CREATE TABLE IF NOT EXISTS traffic_stats_windowed (
+  camera_id text,
+  window_type text,
+  window_start timestamp,
+  car_count int,
+  bus_count int,
+  truck_count int,
+  motorcycle_count int,
+  total_count int,
+  PRIMARY KEY ((camera_id, window_type), window_start)
+) WITH CLUSTERING ORDER BY (window_start DESC);
+
+-- create table for camera metadata
+CREATE TABLE IF NOT EXISTS camera_info (
+  camera_id text PRIMARY KEY,
+  camera_name text,
+  lat double,
+  lon double
+);
