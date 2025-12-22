@@ -55,8 +55,26 @@ if (Test-Path $SEED_FILE) {
 
 Write-Host "`ncassandra setup completed successfully!" -ForegroundColor Green
 Write-Host ""
-Write-Host "to check data:" -ForegroundColor Yellow
-Write-Host "  kubectl exec -n $NAMESPACE cassandra-client -- cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e `"USE traffic_data; SELECT COUNT(*) FROM traffic_metrics;`""
+Write-Host "=== HUONG DAN KIEM TRA ===" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "to delete cassandra-client pod:" -ForegroundColor Yellow
-Write-Host "  kubectl delete pod cassandra-client -n $NAMESPACE"
+Write-Host "1. Xem danh sach cac bang trong keyspace traffic_data:" -ForegroundColor Cyan
+Write-Host "   kubectl exec -n $NAMESPACE cassandra-client -- cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e `"USE traffic_data; DESCRIBE TABLES;`""
+Write-Host ""
+Write-Host "2. Xem so luong row trong tung bang:" -ForegroundColor Cyan
+Write-Host "   kubectl exec -n $NAMESPACE cassandra-client -- cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e `"USE traffic_data; SELECT COUNT(*) FROM camera_info;`""
+Write-Host "   kubectl exec -n $NAMESPACE cassandra-client -- cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e `"USE traffic_data; SELECT COUNT(*) FROM traffic_windowed_by_camera;`""
+Write-Host "   kubectl exec -n $NAMESPACE cassandra-client -- cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e `"USE traffic_data; SELECT COUNT(*) FROM traffic_windowed_all;`""
+Write-Host "   kubectl exec -n $NAMESPACE cassandra-client -- cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e `"USE traffic_data; SELECT COUNT(*) FROM traffic_hourly_by_camera;`""
+Write-Host "   kubectl exec -n $NAMESPACE cassandra-client -- cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e `"USE traffic_data; SELECT COUNT(*) FROM traffic_daily_by_camera;`""
+Write-Host ""
+Write-Host "3. Xem du lieu mau tu bang camera_info:" -ForegroundColor Cyan
+Write-Host "   kubectl exec -n $NAMESPACE cassandra-client -- cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e `"USE traffic_data; SELECT * FROM camera_info LIMIT 10;`""
+Write-Host ""
+Write-Host "4. Xem du lieu mau tu bang traffic_windowed_by_camera:" -ForegroundColor Cyan
+Write-Host "   kubectl exec -n $NAMESPACE cassandra-client -- cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e `"USE traffic_data; SELECT * FROM traffic_windowed_by_camera LIMIT 10;`""
+Write-Host ""
+Write-Host "5. Xem du lieu mau tu bang traffic_windowed_all:" -ForegroundColor Cyan
+Write-Host "   kubectl exec -n $NAMESPACE cassandra-client -- cqlsh $CASSANDRA_HOST $CASSANDRA_PORT -e `"USE traffic_data; SELECT * FROM traffic_windowed_all LIMIT 10;`""
+Write-Host ""
+Write-Host "6. Xoa cassandra-client pod:" -ForegroundColor Cyan
+Write-Host "   kubectl delete pod cassandra-client -n $NAMESPACE"
