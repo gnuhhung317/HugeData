@@ -57,9 +57,9 @@ spec:
         type: RuntimeDefault
   executor:
     instances: 1
-    coreRequest: "100m"
-    coreLimit: "300m"
-    memory: 512m
+    coreRequest: "1"
+    coreLimit: "2"
+    memory: 1g  
     labels:
       version: "3.5.1"
     env:

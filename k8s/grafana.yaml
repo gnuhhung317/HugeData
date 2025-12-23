@@ -22,6 +22,16 @@ data:
           timescaledb: true
         isDefault: true
         editable: true
+      - name: Cassandra
+        type: hadesarchitect-cassandra-datasource
+        uid: cassandra
+        access: proxy
+        url: cassandra.hugedata.svc.cluster.local:9042
+        jsonData:
+          keyspace: traffic_data
+          consistency: ONE
+        isDefault: false
+        editable: true
       - name: Prometheus
         type: prometheus
         uid: prometheus
@@ -802,6 +812,721 @@ data:
       "weekStart": ""
     }
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-cassandra
+  namespace: hugedata
+data:
+  cassandra-dashboard.json: |
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 1,
+      "links": [],
+      "panels": [
+        {
+          "datasource": {
+            "type": "hadesarchitect-cassandra-datasource",
+            "uid": "cassandra"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": true,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": -1,
+                "barWidthFactor": 1,
+                "drawStyle": "line",
+                "fillOpacity": 79,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 0,
+                "pointSize": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "hidden",
+              "placement": "right",
+              "showLegend": false
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "hadesarchitect-cassandra-datasource",
+                "uid": "cassandra"
+              },
+              "datasourceId": 2,
+              "queryType": "query",
+              "rawQuery": true,
+              "refId": "A",
+              "target": "SELECT window_start, total_count FROM traffic_data.traffic_windowed_all WHERE window_type='$window_type' LIMIT 1000"
+            }
+          ],
+          "title": "Total Vehicles (All Cameras)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "hadesarchitect-cassandra-datasource",
+            "uid": "cassandra"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "footer": {
+                  "reducers": []
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "camera_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Select Camera",
+                        "url": "/d/cassandra-traffic?var-camera_id=${__data.fields.camera_id}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 10,
+            "x": 0,
+            "y": 8
+          },
+          "id": 7,
+          "options": {
+            "cellHeight": "sm",
+            "frameIndex": 3,
+            "showHeader": true
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "hadesarchitect-cassandra-datasource",
+                "uid": "cassandra"
+              },
+              "datasourceId": 2,
+              "queryType": "query",
+              "rawQuery": true,
+              "refId": "A",
+              "target": "SELECT camera_name,camera_id, lat, lon FROM traffic_data.camera_info LIMIT 100"
+            }
+          ],
+          "title": "Camera List (Click camera_id to select)",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "hadesarchitect-cassandra-datasource",
+            "uid": "cassandra"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 79,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 0,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 14,
+            "x": 10,
+            "y": 8
+          },
+          "id": 6,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "hidden",
+              "placement": "right",
+              "showLegend": false
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "hadesarchitect-cassandra-datasource",
+                "uid": "cassandra"
+              },
+              "datasourceId": 2,
+              "queryType": "query",
+              "rawQuery": true,
+              "refId": "A",
+              "target": "SELECT window_start, total_count FROM traffic_data.traffic_windowed_by_camera WHERE camera_id='$camera_id' AND window_type='$window_type' LIMIT 500"
+            }
+          ],
+          "title": "Total Count - Camera: ${camera_id}",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "hadesarchitect-cassandra-datasource",
+            "uid": "cassandra"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 1,
+                "barWidthFactor": 1,
+                "drawStyle": "bars",
+                "fillOpacity": 79,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "stepBefore",
+                "lineWidth": 0,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 15
+          },
+          "id": 5,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "hidden",
+              "placement": "right",
+              "showLegend": false
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "hadesarchitect-cassandra-datasource",
+                "uid": "cassandra"
+              },
+              "datasourceId": 2,
+              "queryType": "query",
+              "rawQuery": true,
+              "refId": "A",
+              "target": "SELECT window_start, motorcycle_count FROM traffic_data.traffic_windowed_by_camera WHERE camera_id='$camera_id' AND window_type='$window_type' LIMIT 500"
+            }
+          ],
+          "title": "Motorcycle Count - Camera: ${camera_id}",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "hadesarchitect-cassandra-datasource",
+            "uid": "cassandra"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "bars",
+                "fillOpacity": 100,
+                "gradientMode": "hue",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 15
+          },
+          "id": 2,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "hidden",
+              "placement": "right",
+              "showLegend": false
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "hadesarchitect-cassandra-datasource",
+                "uid": "cassandra"
+              },
+              "datasourceId": 2,
+              "queryType": "query",
+              "rawQuery": true,
+              "refId": "A",
+              "target": "SELECT window_start, car_count FROM traffic_data.traffic_windowed_by_camera WHERE camera_id='$camera_id' AND window_type='$window_type' LIMIT 500"
+            }
+          ],
+          "title": "Car Count - Camera: ${camera_id}",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "hadesarchitect-cassandra-datasource",
+            "uid": "cassandra"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "continuous-GrYlRd"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 23
+          },
+          "id": 4,
+          "options": {
+            "displayMode": "lcd",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "color"
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "hadesarchitect-cassandra-datasource",
+                "uid": "cassandra"
+              },
+              "datasourceId": 2,
+              "queryType": "query",
+              "rawQuery": true,
+              "refId": "A",
+              "target": "SELECT window_start, truck_count FROM traffic_data.traffic_windowed_by_camera WHERE camera_id='$camera_id' AND window_type='$window_type' LIMIT 500"
+            }
+          ],
+          "title": "Truck Count - Camera: ${camera_id}",
+          "type": "bargauge"
+        },
+        {
+          "datasource": {
+            "type": "hadesarchitect-cassandra-datasource",
+            "uid": "cassandra"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "continuous-GrYlRd"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 23
+          },
+          "id": 3,
+          "options": {
+            "displayMode": "lcd",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "color"
+          },
+          "pluginVersion": "12.3.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "hadesarchitect-cassandra-datasource",
+                "uid": "cassandra"
+              },
+              "datasourceId": 2,
+              "queryType": "query",
+              "rawQuery": true,
+              "refId": "A",
+              "target": "SELECT window_start, bus_count FROM traffic_data.traffic_windowed_by_camera WHERE camera_id='$camera_id' AND window_type='$window_type' LIMIT 500"
+            }
+          ],
+          "title": "Bus Count - Camera: ${camera_id}",
+          "type": "bargauge"
+        }
+      ],
+      "preload": false,
+      "refresh": "5s",
+      "schemaVersion": 42,
+      "tags": [
+        "cassandra",
+        "traffic",
+        "monitoring"
+      ],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "text": "30m",
+              "value": "30m"
+            },
+            "includeAll": false,
+            "name": "window_type",
+            "options": [
+              {
+                "selected": true,
+                "text": "30m",
+                "value": "30m"
+              },
+              {
+                "selected": false,
+                "text": "1h",
+                "value": "1h"
+              }
+            ],
+            "query": "30m,1h",
+            "type": "custom"
+          },
+          {
+            "current": {
+              "text": "5a6061868576340017d06611",
+              "value": "5a6061868576340017d06611"
+            },
+            "label": "Camera ID",
+            "name": "camera_id",
+            "options": [
+              {
+                "text": "5a6061868576340017d06611",
+                "value": "5a6061868576340017d06611"
+              }
+            ],
+            "query": "5a6061868576340017d06611",
+            "type": "textbox"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "Asia/Ho_Chi_Minh",
+      "title": "Cassandra Traffic Dashboard",
+      "uid": "cassandra-traffic",
+      "version": 1
+    }
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -829,7 +1554,11 @@ spec:
         - name: GF_SECURITY_ADMIN_PASSWORD
           value: "admin"
         - name: GF_INSTALL_PLUGINS
-          value: ""
+          value: "hadesarchitect-cassandra-datasource"
+        - name: GF_USERS_DEFAULT_TIMEZONE
+          value: "UTC"
+        - name: GF_SECURITY_ADMIN_PASSWORD_CHANGE_REQUIRED
+          value: "false"
         volumeMounts:
         - name: grafana-storage
           mountPath: /var/lib/grafana
@@ -843,6 +1572,11 @@ spec:
         - name: grafana-dashboard-k8s
           mountPath: /var/lib/grafana/dashboards/k8s-metrics-dashboard.json
           subPath: k8s-metrics-dashboard.json
+          mountPath: /var/lib/grafana/dashboards/traffic-dashboard.json
+          subPath: traffic-dashboard.json
+        - name: grafana-dashboard-cassandra
+          mountPath: /var/lib/grafana/dashboards/cassandra-dashboard.json
+          subPath: cassandra-dashboard.json
         resources:
           requests:
             memory: "256Mi"
@@ -865,6 +1599,9 @@ spec:
       - name: grafana-dashboard-k8s
         configMap:
           name: grafana-dashboard-k8s-metrics
+      - name: grafana-dashboard-cassandra
+        configMap:
+          name: grafana-dashboard-cassandra
 ---
 apiVersion: v1
 kind: Service

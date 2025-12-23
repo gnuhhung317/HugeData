@@ -1,4 +1,4 @@
-FROM apache/spark-py:v3.4.0
+FROM apache/spark:3.5.1-python3
 
 USER root
 
@@ -13,6 +13,7 @@ COPY ./jars/kafka-clients-3.5.1.jar /opt/spark/jars/
 COPY ./jars/spark-token-provider-kafka-0-10_2.12-3.5.1.jar /opt/spark/jars/
 COPY ./jars/commons-pool2-2.11.1.jar /opt/spark/jars/
 COPY ./jars/postgresql-42.7.3.jar /opt/spark/jars/
+COPY ./jars/spark-cassandra-connector-assembly_2.12-3.5.1.jar /opt/spark/jars/
 
 
 # Download JARs only if not exist

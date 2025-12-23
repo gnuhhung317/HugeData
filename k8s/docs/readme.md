@@ -39,9 +39,13 @@ kubectl edit deployment spark-operator-1-controller -n hugedata
 ```
 
 ## 2. start kafka / kafka producer / timescaledb
+## 4. start hdfs
 ```bash
+kubectl apply -f k8s/hdfs-cluster.yaml
 kubectl apply -f k8s/kafka.yaml
 
+# batch
+kubectl apply -f k8s/cassandra.yaml
 # realtime
 kubectl apply -f k8s/timescaledb.yaml
 
@@ -49,18 +53,17 @@ kubectl apply -f k8s/timescaledb.yaml
 kubectl apply -f k8s/producer-deployment.yaml
 ```
 
-### deploy grafana
+## 3. start cassandra | BATCH
 ```bash
-# realtime
-kubectl apply -f k8s/grafana.yaml
+# deploy cassandra cluster (3 nodes)
+kubectl apply -f k8s/cassandra.yaml
+
+# setup 
+# powershell 
+./cassandra/setup-cassandra.ps1
 ```
 
-## 3. start hdfs
-```bash
-kubectl apply -f k8s/hdfs-cluster.yaml
-```
-
-## 4. setup timescaledb + grafana
+## 5. setup timescaledb + grafana
 ### initialize timescaledb schema
 ```bash
 # copy init.sql to pod
@@ -70,7 +73,7 @@ kubectl cp timescaledb/init.sql hugedata/timescaledb-0:/tmp/init.sql
 kubectl exec timescaledb-0 -n hugedata -- psql -U postgres -d traffic -f /tmp/init.sql
 ```
 
-## 5. start spark
+## 6. start spark
 ```bash
 kubectl apply -f k8s/spark-batch-app.yaml -n hugedata
 kubectl apply -f k8s/spark-realtime-app.yaml -n hugedata
@@ -92,7 +95,9 @@ kubectl exec timescaledb-0 -n hugedata -- psql -U postgres -d traffic -c "SELECT
 # port-forward grafana
 kubectl port-forward svc/grafana 3000:3000 -n hugedata
 
-# open browser: http://localhost:3000
+# open browser: 
+# - timescaledb: http://localhost:3000
+# - cassandra: http://localhost:3001
 # login: admin/admin
 ```
 ### start streamlit dashboard

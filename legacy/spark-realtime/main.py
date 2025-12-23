@@ -54,7 +54,10 @@ df = (
     .format("kafka")
     .option("kafka.bootstrap.servers", kafka_bootstrap)
     .option("subscribe", kafka_topic)
-    .option("startingOffsets", "earliest")
+    .option("startingOffsets", "earliest") 
+    .option("kafka.max.partition.fetch.bytes", "1048576")  # 1MB
+    .option("kafka.fetch.max.bytes", "5242880")            # 5MB
+    .option("maxOffsetsPerTrigger", "2000")
     .option("failOnDataLoss", "false")
     .load()
 )
