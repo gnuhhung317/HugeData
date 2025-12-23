@@ -72,6 +72,34 @@ def get_latest_metrics():
     """
     return fetch_data(query)
 
+def get_latest_metrics_1h():
+    """Get latest metrics per camera within the last 1 hour"""
+    query = """
+    SELECT
+        time,
+        camera_id,
+        camera_name,
+        latitude,
+        longitude,
+        car_count,
+        motorcycle_count,
+        bus_count,
+        truck_count,
+        total_count
+    FROM (
+        SELECT *,
+               ROW_NUMBER() OVER (
+                   PARTITION BY camera_id
+                   ORDER BY time DESC
+               ) AS rn
+        FROM traffic_metrics
+        WHERE time >= NOW() - INTERVAL '1 hour'
+    ) t
+    WHERE rn = 1
+    ORDER BY total_count DESC
+    """
+    return fetch_data(query)
+
 def get_hourly_trend(hours=24):
     """Get hourly traffic trend - fallback to raw table if view is empty"""
     # Try continuous aggregate first
@@ -527,7 +555,6 @@ elif page == "📈 Trends":
 elif page == "⚠️ Alerts":
     st.title("⚠️ Traffic Alerts & Anomalies")
     
-    st.info("🚧 Feature coming soon: Real-time anomaly detection")
     
     # Threshold-based alerts
     st.subheader("🔴 High Traffic Alerts")
@@ -558,7 +585,7 @@ elif page == "⚠️ Alerts":
                 alerts = alerts.rename(columns={'total_count': 'vehicle_count'})
 
     # Average mode or fallback: compute average over recent minutes
-    if detection_mode.startswith("Average"):
+    if detection_mode.startswith("Average") or (alerts is None or alerts.empty):
         minutes = st.slider("Average window (minutes)", 5, 120, 30)
         query = """
         SELECT 
@@ -567,7 +594,7 @@ elif page == "⚠️ Alerts":
             AVG(total_count) as avg_count,
             MAX(time) as time
         FROM traffic_metrics
-        WHERE time >= NOW() - (%s * INTERVAL '1 minute')
+        WHERE time >= NOW() - INTERVAL '%s minutes'
         GROUP BY camera_name, camera_id
         HAVING AVG(total_count) > %s
         ORDER BY avg_count DESC
@@ -598,9 +625,9 @@ elif page == "⚠️ Alerts":
     st.info("Detecting cameras with sudden traffic increase compared to the average over the last 1 hour")
 
     # Allow user to set multiplier (1.0 = greater than average)
-    multiplier = st.slider("Spike multiplier (x average in last 1 hour)", 1.0, 3.0, 1.0, 0.1)
+    multiplier = st.slider("Spike multiplier (x average in last 1 hour)", 1.0, 3.0, 1.2, 0.1)
 
-    latest = get_latest_metrics()
+    latest = get_latest_metrics_1h()
     if latest is None or latest.empty:
         st.info("No latest snapshot available for spike detection.")
     else:
@@ -621,8 +648,9 @@ elif page == "⚠️ Alerts":
             avg_df = avg_df.copy()
             avg_df['avg_last_hour'] = pd.to_numeric(avg_df['avg_last_hour'], errors='coerce').fillna(0).astype(float)
 
-            merged = pd.merge(latest_norm, avg_df[['camera_id','avg_last_hour']], on='camera_id', how='left')
-            merged['avg_last_hour'] = merged['avg_last_hour'].fillna(0)
+            merged = pd.merge(latest_norm, avg_df[['camera_id','avg_last_hour']], on='camera_id', how='inner')
+            # Keep only cameras with a positive average in the last hour to avoid division by zero and invalid comparisons
+            merged = merged[merged['avg_last_hour'] > 0].copy()
 
             # Detect spikes where latest > multiplier * avg_last_hour
             merged['spike'] = merged['total_count'] > (merged['avg_last_hour'] * float(multiplier))
@@ -650,9 +678,17 @@ elif page == "⚠️ Alerts":
                 # Reorder columns for readability
                 display = display[['Camera','Latest','Avg(1h)','Increase','Alert Level','Time']]
 
+                # ===== PAGING =====
+                page_size = st.selectbox("Rows per page", [5, 10, 20, 50], index=1)
+                max_page = max(1, (len(display) - 1) // page_size + 1)
+                page_num = st.number_input("Page", min_value=1, max_value=max_page, value=1)
+
+                start = (page_num - 1) * page_size
+                end = start + page_size
+
                 num_critical = int((display['Alert Level'] == '🔴 Critical').sum())
                 st.warning(f"⚠️ {len(display)} cameras exceeded {multiplier}× the 1-hour average ({num_critical} critical)")
-                st.dataframe(display, use_container_width=True, hide_index=True)
+                st.dataframe(display.iloc[start:end], use_container_width=True, hide_index=True)
 
 # Footer
 st.markdown("---")
