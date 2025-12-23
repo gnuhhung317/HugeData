@@ -844,15 +844,15 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
+                "axisBorderShow": true,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
+                "barAlignment": -1,
+                "barWidthFactor": 1,
                 "drawStyle": "line",
-                "fillOpacity": 10,
+                "fillOpacity": 79,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -861,8 +861,8 @@ data:
                 },
                 "insertNulls": false,
                 "lineInterpolation": "linear",
-                "lineWidth": 2,
-                "pointSize": 5,
+                "lineWidth": 0,
+                "pointSize": 1,
                 "scaleDistribution": {
                   "type": "linear"
                 },
@@ -871,7 +871,7 @@ data:
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
-                  "mode": "none"
+                  "mode": "normal"
                 },
                 "thresholdsStyle": {
                   "mode": "off"
@@ -884,6 +884,10 @@ data:
                   {
                     "color": "green",
                     "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
                   }
                 ]
               }
@@ -900,9 +904,9 @@ data:
           "options": {
             "legend": {
               "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+              "displayMode": "hidden",
+              "placement": "right",
+              "showLegend": false
             },
             "tooltip": {
               "hideZeros": false,
@@ -917,6 +921,7 @@ data:
                 "type": "hadesarchitect-cassandra-datasource",
                 "uid": "cassandra"
               },
+              "datasourceId": 2,
               "queryType": "query",
               "rawQuery": true,
               "refId": "A",
@@ -1025,7 +1030,7 @@ data:
                 "barAlignment": 0,
                 "barWidthFactor": 0.6,
                 "drawStyle": "line",
-                "fillOpacity": 10,
+                "fillOpacity": 79,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -1034,7 +1039,7 @@ data:
                 },
                 "insertNulls": false,
                 "lineInterpolation": "linear",
-                "lineWidth": 2,
+                "lineWidth": 0,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -1044,7 +1049,7 @@ data:
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
-                  "mode": "none"
+                  "mode": "normal"
                 },
                 "thresholdsStyle": {
                   "mode": "off"
@@ -1057,6 +1062,10 @@ data:
                   {
                     "color": "green",
                     "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
                   }
                 ]
               }
@@ -1073,9 +1082,9 @@ data:
           "options": {
             "legend": {
               "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+              "displayMode": "hidden",
+              "placement": "right",
+              "showLegend": false
             },
             "tooltip": {
               "hideZeros": false,
@@ -1090,6 +1099,7 @@ data:
                 "type": "hadesarchitect-cassandra-datasource",
                 "uid": "cassandra"
               },
+              "datasourceId": 2,
               "queryType": "query",
               "rawQuery": true,
               "refId": "A",
@@ -1115,10 +1125,10 @@ data:
                 "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
+                "barAlignment": 1,
+                "barWidthFactor": 1,
+                "drawStyle": "bars",
+                "fillOpacity": 79,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -1126,8 +1136,8 @@ data:
                   "viz": false
                 },
                 "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 2,
+                "lineInterpolation": "stepBefore",
+                "lineWidth": 0,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -1137,7 +1147,7 @@ data:
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
-                  "mode": "none"
+                  "mode": "normal"
                 },
                 "thresholdsStyle": {
                   "mode": "off"
@@ -1150,6 +1160,10 @@ data:
                   {
                     "color": "green",
                     "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
                   }
                 ]
               }
@@ -1166,9 +1180,9 @@ data:
           "options": {
             "legend": {
               "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+              "displayMode": "hidden",
+              "placement": "right",
+              "showLegend": false
             },
             "tooltip": {
               "hideZeros": false,
@@ -1183,6 +1197,7 @@ data:
                 "type": "hadesarchitect-cassandra-datasource",
                 "uid": "cassandra"
               },
+              "datasourceId": 2,
               "queryType": "query",
               "rawQuery": true,
               "refId": "A",
@@ -1210,9 +1225,9 @@ data:
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
+                "drawStyle": "bars",
+                "fillOpacity": 100,
+                "gradientMode": "hue",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
@@ -1220,7 +1235,7 @@ data:
                 },
                 "insertNulls": false,
                 "lineInterpolation": "linear",
-                "lineWidth": 2,
+                "lineWidth": 1,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -1230,7 +1245,7 @@ data:
                 "spanNulls": false,
                 "stacking": {
                   "group": "A",
-                  "mode": "none"
+                  "mode": "normal"
                 },
                 "thresholdsStyle": {
                   "mode": "off"
@@ -1243,6 +1258,10 @@ data:
                   {
                     "color": "green",
                     "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
                   }
                 ]
               }
@@ -1259,9 +1278,9 @@ data:
           "options": {
             "legend": {
               "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+              "displayMode": "hidden",
+              "placement": "right",
+              "showLegend": false
             },
             "tooltip": {
               "hideZeros": false,
@@ -1276,6 +1295,7 @@ data:
                 "type": "hadesarchitect-cassandra-datasource",
                 "uid": "cassandra"
               },
+              "datasourceId": 2,
               "queryType": "query",
               "rawQuery": true,
               "refId": "A",
@@ -1293,41 +1313,7 @@ data:
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "showValues": false,
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
+                "mode": "continuous-GrYlRd"
               },
               "mappings": [],
               "thresholds": {
@@ -1336,6 +1322,10 @@ data:
                   {
                     "color": "green",
                     "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
                   }
                 ]
               }
@@ -1350,17 +1340,28 @@ data:
           },
           "id": 4,
           "options": {
+            "displayMode": "lcd",
             "legend": {
               "calcs": [],
               "displayMode": "list",
               "placement": "bottom",
-              "showLegend": true
+              "showLegend": false
             },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "color"
           },
           "pluginVersion": "12.3.1",
           "targets": [
@@ -1369,6 +1370,7 @@ data:
                 "type": "hadesarchitect-cassandra-datasource",
                 "uid": "cassandra"
               },
+              "datasourceId": 2,
               "queryType": "query",
               "rawQuery": true,
               "refId": "A",
@@ -1376,7 +1378,7 @@ data:
             }
           ],
           "title": "Truck Count - Camera: ${camera_id}",
-          "type": "timeseries"
+          "type": "bargauge"
         },
         {
           "datasource": {
@@ -1386,41 +1388,7 @@ data:
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "showValues": false,
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
+                "mode": "continuous-GrYlRd"
               },
               "mappings": [],
               "thresholds": {
@@ -1429,6 +1397,10 @@ data:
                   {
                     "color": "green",
                     "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
                   }
                 ]
               }
@@ -1443,17 +1415,28 @@ data:
           },
           "id": 3,
           "options": {
+            "displayMode": "lcd",
             "legend": {
               "calcs": [],
               "displayMode": "list",
               "placement": "bottom",
-              "showLegend": true
+              "showLegend": false
             },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "color"
           },
           "pluginVersion": "12.3.1",
           "targets": [
@@ -1462,6 +1445,7 @@ data:
                 "type": "hadesarchitect-cassandra-datasource",
                 "uid": "cassandra"
               },
+              "datasourceId": 2,
               "queryType": "query",
               "rawQuery": true,
               "refId": "A",
@@ -1469,7 +1453,7 @@ data:
             }
           ],
           "title": "Bus Count - Camera: ${camera_id}",
-          "type": "timeseries"
+          "type": "bargauge"
         }
       ],
       "preload": false,
@@ -1527,7 +1511,7 @@ data:
         "to": "now"
       },
       "timepicker": {},
-      "timezone": "",
+      "timezone": "Asia/Ho_Chi_Minh",
       "title": "Cassandra Traffic Dashboard",
       "uid": "cassandra-traffic",
       "version": 1
