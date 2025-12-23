@@ -27,8 +27,38 @@ spec:
     cores: 1
     memory: 512m
     serviceAccount: default
+    env:
+      - name: CASSANDRA_HOST
+        value: "cassandra.hugedata.svc.cluster.local"
+      - name: HDFS_NAMENODE
+        value: "hdfs://hdfs-namenode:8020"
+    securityContext:
+      runAsUser: 185
+      runAsGroup: 185
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
 
   executor:
     instances: 1
     cores: 1
-    memory: 512m
+    memory: 768m
+    env:
+      - name: CASSANDRA_HOST
+        value: "cassandra.hugedata.svc.cluster.local"
+      - name: HDFS_NAMENODE
+        value: "hdfs://hdfs-namenode:8020"
+    securityContext:
+      runAsUser: 185
+      runAsGroup: 185
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault

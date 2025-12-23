@@ -71,8 +71,10 @@ spec:
             - /bin/bash
             - -c
             - /ready-probe.sh
-          initialDelaySeconds: 15
-          timeoutSeconds: 5
+          initialDelaySeconds: 60
+          timeoutSeconds: 15
+          periodSeconds: 10
+          failureThreshold: 3
         # These volume mounts are persistent. They are like inline claims,
         # but not exactly because the names need to match exactly one of
         # the stateful pod volumes.

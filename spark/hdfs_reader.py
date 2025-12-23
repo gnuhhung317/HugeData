@@ -25,7 +25,7 @@ output tables:
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
-    col, to_timestamp, window, lit, to_date,
+    col, to_timestamp, to_utc_timestamp, window, lit, to_date,
     sum as _sum, avg as _avg, max as _max, min as _min,
     struct, max as _max_struct, explode, array
 )
@@ -80,10 +80,14 @@ def main():
     # -------------------------------------------------
     df = spark.read.parquet(input_path)
 
-    # chuẩn hóa timestamp
+    # chuẩn hóa timestamp và convert từ utc+7 về utc+0
+    # data trong hdfs đang ở utc+7, cần convert về utc để lưu vào cassandra
     df = df.withColumn(
         "event_time",
-        to_timestamp(col("time"))
+        to_utc_timestamp(
+            to_timestamp(col("time")),
+            "Asia/Ho_Chi_Minh"
+        )
     )
 
     # filter dữ liệu hợp lệ
