@@ -1,27 +1,24 @@
 import os
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col
+from pyspark.sql.functions import from_json, col, to_timestamp, year, month, dayofmonth, hour
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 
 # -----------------------------------------------------------
-# Spark session (retain original _jsc Hadoop config semantics)
+# Spark session
 # -----------------------------------------------------------
 spark = (
     SparkSession.builder
-    .appName("KafkaTrafficLocalTest")
+    .appName("KafkaTrafficToHDFS")
     .getOrCreate()
 )
 
 spark.sparkContext.setLogLevel("WARN")
 
-
-
 kafka_bootstrap = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 kafka_topic = os.environ.get("KAFKA_TOPIC", "traffic")
-kafka_group_id = os.environ.get("KAFKA_GROUP_ID", "spark-batch-group")
 
 # ---------------------------------
-# Define JSON schema for Kafka payload
+# JSON schema
 # ---------------------------------
 schema = StructType([
     StructField("time", StringType()),
@@ -37,55 +34,54 @@ schema = StructType([
 ])
 
 # ---------------------------------
-# Read stream from Kafka
+# Read from Kafka
 # ---------------------------------
 df = (
     spark.readStream
     .format("kafka")
     .option("kafka.bootstrap.servers", kafka_bootstrap)
     .option("subscribe", kafka_topic)
-    .option("kafka.group.id", kafka_group_id)
     .option("startingOffsets", "earliest")
     .option("failOnDataLoss", "false")
     .load()
 )
 
-df_string = df.selectExpr("CAST(value AS STRING)")
-df_parsed = df_string.select(from_json(col("value"), schema).alias("data")).select("data.*")
-
-
+df_parsed = (
+    df.selectExpr("CAST(value AS STRING)")
+      .select(from_json(col("value"), schema).alias("data"))
+      .select("data.*")
+)
 
 # ---------------------------------
-# HDFS Output Destination
+# Parse time & create partitions
+# ---------------------------------
+df_with_time = (
+    df_parsed
+    .withColumn("event_time", to_timestamp(col("time")))
+    .withColumn("year", year(col("event_time")))
+    .withColumn("month", month(col("event_time")))
+    .withColumn("day", dayofmonth(col("event_time")))
+    .withColumn("hour", hour(col("event_time")))
+)
+
+# ---------------------------------
+# HDFS output (partitioned)
 # ---------------------------------
 hdfs_namenode = os.environ.get("HDFS_NAMENODE", "hdfs://hdfs-namenode:8020")
-hdfs_output_path = f"{hdfs_namenode}/traffic_data/traffic_stream"
-hdfs_checkpoint_path = f"{hdfs_namenode}/traffic_data/checkpoint/traffic_stream"
 
-try:
-    (
-        df_parsed.writeStream
-        .outputMode("append")
-        .format("parquet")
-        .option("path", hdfs_output_path)
-        .option("checkpointLocation", hdfs_checkpoint_path)
-        .trigger(processingTime="10 seconds")
-        .start()
-    )
-    print(f"[HDFS-INFO] Parquet sink to HDFS started -> {hdfs_output_path}")
-except Exception as e:
-    print(f"[HDFS-WARN] Could not start Parquet HDFS sink. Error: {e}")
+hdfs_output_path = f"{hdfs_namenode}/traffic_data/raw/traffic_stream"
+hdfs_checkpoint_path = f"{hdfs_namenode}/traffic_data/checkpoints/traffic_stream"
 
-# Also log to console for quick verification
 (
-    df.selectExpr("CAST(value AS STRING)")
-    .writeStream
-    .format("console")
-    .option("truncate", False)
-    .trigger(processingTime="5 seconds")
+    df_with_time.writeStream
+    .format("parquet")
+    .outputMode("append")
+    .option("path", hdfs_output_path)
+    .option("checkpointLocation", hdfs_checkpoint_path)
+    .partitionBy("year", "month", "day", "hour")
+    # Spark thực hiện gom data trong 2 phút mỗi lần ghi vào hdfs 
+    .trigger(processingTime="2 minutes") 
     .start()
 )
 
 spark.streams.awaitAnyTermination()
-
-

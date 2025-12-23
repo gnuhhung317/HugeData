@@ -20,6 +20,11 @@ spec:
       containers:
       - name: namenode
         image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+        resources:
+          limits:
+            memory: "600Mi" # Namenode cần nhớ metadata nên cần cao hơn Datanode một chút
+          requests:
+            memory: "400Mi"
         env:
         - name: CLUSTER_NAME
           value: hadoop-cluster
@@ -87,7 +92,7 @@ metadata:
   namespace: hugedata
 spec:
   serviceName: hdfs-datanode-headless
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: hdfs-datanode
@@ -99,6 +104,11 @@ spec:
       containers:
       - name: datanode
         image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+        resources:
+          limits:
+            memory: "600Mi"
+          requests:
+            memory: "400Mi"
         env:
         - name: CORE_CONF_fs_defaultFS
           value: hdfs://hdfs-namenode:8020
