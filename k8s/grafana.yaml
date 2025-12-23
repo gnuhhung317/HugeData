@@ -22,6 +22,15 @@ data:
           timescaledb: true
         isDefault: true
         editable: true
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        access: proxy
+        url: http://prometheus.hugedata.svc.cluster.local:9090
+        isDefault: false
+        editable: true
+        jsonData:
+          timeInterval: "15s"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -829,7 +838,11 @@ spec:
         - name: grafana-dashboards-provider
           mountPath: /etc/grafana/provisioning/dashboards
         - name: grafana-dashboard-traffic
-          mountPath: /var/lib/grafana/dashboards
+          mountPath: /var/lib/grafana/dashboards/traffic-dashboard.json
+          subPath: traffic-dashboard.json
+        - name: grafana-dashboard-k8s
+          mountPath: /var/lib/grafana/dashboards/k8s-metrics-dashboard.json
+          subPath: k8s-metrics-dashboard.json
         resources:
           requests:
             memory: "256Mi"
@@ -849,6 +862,9 @@ spec:
       - name: grafana-dashboard-traffic
         configMap:
           name: grafana-dashboard-traffic
+      - name: grafana-dashboard-k8s
+        configMap:
+          name: grafana-dashboard-k8s-metrics
 ---
 apiVersion: v1
 kind: Service

@@ -1,0 +1,315 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-k8s-metrics
+  namespace: hugedata
+data:
+  k8s-metrics-dashboard.json: |
+    {
+      "title": "Namespace HugeData - Metrics & Errors",
+      "uid": "hugedata-metrics",
+      "tags": ["kubernetes", "monitoring", "hugedata"],
+      "timezone": "",
+      "refresh": "10s",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "panels": [
+        {
+          "title": "Real CPU Usage",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"hugedata\", pod!=\"\", container!=\"POD\", container!=\"\"}[5m])) by (pod)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "axisLabel": "CPU Cores"
+              },
+              "unit": "short",
+              "min": 0
+            }
+          }
+        },
+        {
+          "title": "Real Memory Usage",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"hugedata\", pod!=\"\", container!=\"POD\", container!=\"\"}) by (pod) / 1024 / 1024",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "axisLabel": "Memory (MB)"
+              },
+              "unit": "short",
+              "min": 0
+            }
+          }
+        },
+        {
+          "title": "Pod Status",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [
+            {
+              "expr": "count(count by (pod) (kube_pod_status_phase{namespace=\"hugedata\", phase=\"Running\"} == 1)) or vector(0)",
+              "legendFormat": "Running",
+              "refId": "A"
+            },
+            {
+              "expr": "count(count by (pod) (kube_pod_status_phase{namespace=\"hugedata\", phase=\"Pending\"} == 1)) or vector(0)",
+              "legendFormat": "Pending",
+              "refId": "B"
+            },
+            {
+              "expr": "count(count by (pod) (kube_pod_status_phase{namespace=\"hugedata\", phase=\"Failed\"} == 1)) or vector(0)",
+              "legendFormat": "Failed",
+              "refId": "C"
+            }
+          ]
+        },
+        {
+          "title": "Container Restarts",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "targets": [
+            {
+              "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"hugedata\"}) by (pod)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "axisPlacement": "auto",
+                "axisLabel": "Restarts",
+                "axisSoftMin": 0
+              },
+              "min": 0
+            }
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "title": "Running Pods",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16},
+          "targets": [
+            {
+              "expr": "count(count by (pod) (kube_pod_status_phase{namespace=\"hugedata\", phase=\"Running\"} == 1)) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "title": "Pending Pods",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16},
+          "targets": [
+            {
+              "expr": "count(count by (pod) (kube_pod_status_phase{namespace=\"hugedata\", phase=\"Pending\"} == 1)) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": 0},
+                  {"color": "yellow", "value": 1}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "title": "Failed Pods",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 16},
+          "targets": [
+            {
+              "expr": "count(count by (pod) (kube_pod_status_phase{namespace=\"hugedata\", phase=\"Failed\"} == 1)) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": 0},
+                  {"color": "red", "value": 1}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "title": "Total Restarts",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 4, "w": 6, "x": 18, "y": 16},
+          "targets": [
+            {
+              "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"hugedata\"}) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": 0},
+                  {"color": "yellow", "value": 1},
+                  {"color": "red", "value": 5}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "title": "Namespace Resource Requests",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+          "targets": [
+            {
+              "expr": "sum(kube_pod_container_resource_requests{namespace=\"hugedata\", resource=\"cpu\"}) or vector(0)",
+              "legendFormat": "CPU Requests (cores)",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(kube_pod_container_resource_requests{namespace=\"hugedata\", resource=\"memory\"}) / 1024 / 1024 / 1024 or vector(0)",
+              "legendFormat": "Memory Requests (GB)",
+              "refId": "B"
+            }
+          ]
+        },
+        {
+          "title": "Namespace Resource Limits",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+          "targets": [
+            {
+              "expr": "sum(kube_pod_container_resource_limits{namespace=\"hugedata\", resource=\"cpu\"}) or vector(0)",
+              "legendFormat": "CPU Limits (cores)",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(kube_pod_container_resource_limits{namespace=\"hugedata\", resource=\"memory\"}) / 1024 / 1024 / 1024 or vector(0)",
+              "legendFormat": "Memory Limits (GB)",
+              "refId": "B"
+            }
+          ]
+        },
+        {
+          "title": "Total Pods in Namespace",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 20},
+          "targets": [
+            {
+              "expr": "count(count by (pod) (kube_pod_info{namespace=\"hugedata\"})) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "blue", "value": null}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "title": "Total Containers",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 20},
+          "targets": [
+            {
+              "expr": "count(count by (pod, container) (kube_pod_container_info{namespace=\"hugedata\"})) or vector(0)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "purple", "value": null}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "title": "Namespace Age",
+          "type": "stat",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "gridPos": {"h": 4, "w": 12, "x": 12, "y": 20},
+          "targets": [
+            {
+              "expr": "max((time() - kube_namespace_created{namespace=\"hugedata\"}) / 86400)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null}
+                ]
+              },
+              "unit": "days",
+              "decimals": 1
+            }
+          }
+        }
+      ]
+    }

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: producer
-        image: kafka-producer:dev
+        image: gnuhhung317/kafka-producer:latest
         imagePullPolicy: IfNotPresent
         env:
         - name: KAFKA_BOOTSTRAP_SERVERS
